@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TariffSolver-lite</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>TariffSolver-lite</h1>
+    <p>Paste your product description below and get instant tariff classification.</p>
+    <textarea id="description" placeholder="e.g. Stainless steel water bottle with insulation" rows="5"></textarea>
+    <button onclick="classifyProduct()">Get HTS Code</button>
+    <div id="result">
+      <h2>Result</h2>
+      <pre id="output">Waiting for input...</pre>
+    </div>
+  </div>
+  <script src="widget.js"></script>
+</body>
+</html>
