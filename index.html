@@ -1,21 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>TariffSolver-lite</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <title>TariffSolver Lite – Landed Cost Widget</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f8f9fa;
+            color: #333;
+        }
+        header {
+            background: #004080;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        .section {
+            padding: 40px 20px;
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px 0;
+            width: 100%;
+            max-width: 500px;
+            font-size: 1em;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>TariffSolver-lite</h1>
-    <p>Paste your product description below and get instant tariff classification.</p>
-    <textarea id="description" placeholder="e.g. Stainless steel water bottle with insulation" rows="5"></textarea>
-    <button onclick="classifyProduct()">Get HTS Code</button>
-    <div id="result">
-      <h2>Result</h2>
-      <pre id="output">Waiting for input...</pre>
+    <header>
+        <h1>TariffSolver Lite</h1>
+        <p>Show Total Landed Cost at Checkout – Instantly</p>
+    </header>
+
+    <div class="section">
+        <h2>Live Demo</h2>
+        <p>Try it with a sample product:</p>
+        <input id="description" placeholder="e.g. Leather wallet" />
+        <button onclick="calculate()">Calculate Landed Cost</button>
+        <div id="result"></div>
     </div>
-  </div>
-  <script src="widget.js"></script>
+
+    <div class="section">
+        <h2>What It Does</h2>
+        <ul>
+            <li>Auto-classifies products using AI</li>
+            <li>Estimates duty and VAT based on destination</li>
+            <li>Returns total landed cost in real-time</li>
+            <li>Easy JS install – drop in one script tag</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>Pricing</h2>
+        <p>Starter: $29/month – 1,000 calculations</p>
+        <p>Growth: $99/month – 10,000 calculations</p>
+        <p>Custom plans available for high volume or marketplaces</p>
+    </div>
+
+    <div class="section">
+        <h2>Early Access</h2>
+        <p>Enter your email to get access to the widget + installation guide:</p>
+        <form action="https://formspree.io/f/your-form-id" method="POST">
+            <input type="email" name="email" placeholder="you@example.com" required />
+            <button type="submit">Request Access</button>
+        </form>
+    </div>
+
+    <footer>
+        &copy; 2025 TariffSolver.ai | Built for global commerce.
+    </footer>
+
+    <script>
+        async function calculate() {
+            const desc = document.getElementById("description").value;
+            const response = await fetch("http://127.0.0.1:8000/calculate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    description: desc,
+                    price: 100,
+                    country: "Canada"
+                })
+            });
+            const data = await response.json();
+            document.getElementById("result").innerHTML = `
+                Landed Cost: $${data.total_cost} <br>
+                Duty: $${data.duty}, VAT: $${data.vat} <br>
+                HS Code: ${data.hts_code} <br>
+                Confidence: ${(data.confidence * 100).toFixed(1)}%
+            `;
+        }
+    </script>
 </body>
 </html>
