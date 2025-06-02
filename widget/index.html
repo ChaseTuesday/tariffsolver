@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TariffSolver Lite – Landed Cost Widget</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f8faff;
+      color: #333;
+    }
+    header {
+      background-color: #002c4d;
+      color: #ffffff;
+      padding: 60px 20px 40px;
+      text-align: center;
+    }
+    header h1 {
+      font-size: 3em;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    header p {
+      font-size: 1.2em;
+      font-weight: 300;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    section {
+      padding: 50px 20px;
+      max-width: 900px;
+      margin: auto;
+    }
+    h2 {
+      color: #002c4d;
+      font-size: 1.8em;
+      margin-top: 40px;
+    }
+    ul {
+      padding-left: 20px;
+    }
+    .cta {
+      background-color: #007acc;
+      color: white;
+      padding: 14px 28px;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 24px;
+      font-size: 1.1em;
+      border-radius: 6px;
+      transition: background-color 0.3s ease;
+    }
+    .cta:hover {
+      background-color: #005fa3;
+    }
+    .form-box {
+      margin-top: 20px;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    input[type="email"] {
+      padding: 12px;
+      width: 100%;
+      max-width: 400px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    input[type="submit"] {
+      background-color: #007acc;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-size: 1em;
+      border-radius: 4px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    input[type="submit"]:hover {
+      background-color: #005fa3;
+    }
+    footer {
+      text-align: center;
+      padding: 25px 10px;
+      background-color: #e9eef3;
+      font-size: 0.9em;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TariffSolver Lite</h1>
+    <p>Show landed cost at checkout. Increase transparency, reduce cart abandonment.</p>
+  </header>
+
+  <section>
+    <h2>What It Does</h2>
+    <ul>
+      <li>📦 Calculates import duties, VAT, and total landed cost in real time</li>
+      <li>🧾 Classifies items automatically using AI (HTS codes)</li>
+      <li>🛍 Works with Shopify, WooCommerce, and other carts</li>
+    </ul>
+
+    <h2>Try It Now</h2>
+    <p><a href="https://tariffsolver-lite.vercel.app" target="_blank" class="cta">Use the Calculator</a></p>
+
+    <h2>Add It to Your Store</h2>
+    <p><strong>Shopify:</strong> Paste this code snippet into your cart or checkout theme file:</p>
+    <pre>&lt;script src="https://tariffsolver-lite.vercel.app/embed.js"&gt;&lt;/script&gt;</pre>
+
+    <div class="form-box">
+      <h3>📧 Get the Widget + Pricing Access</h3>
+      <form action="https://formspree.io/f/mwkglbwj" method="POST">
+        <label for="email">Your email:</label><br>
+        <input type="email" name="email" id="email" required><br>
+        <input type="submit" value="Send Me Access">
+      </form>
+    </div>
+
+    <h2>Billing & Plans</h2>
+    <p><a href="https://buy.stripe.com/test_7sI3fY8EV3TF47i4gg" class="cta">Activate a Plan via Stripe</a></p>
+  </section>
+
+  <footer>
+    &copy; TariffSolver Lite | Updated {today}
+  </footer>
+</body>
+</html>
