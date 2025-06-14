@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TariffSolver Lite</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="/favicon.ico">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #ff6600;
+            text-align: center;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 20px;
+        }
+        textarea, select, input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            font-size: 1em;
+        }
+        button {
+            background: #ff6600;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 1em;
+            margin-top: 20px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .result {
+            background: #e6f7e6;
+            padding: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        .mailchimp {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ccc;
+        }
+        .mailchimp input[type="email"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 1em;
+        }
+        .mailchimp input[type="submit"] {
+            background: #333;
+            color: white;
+            padding: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>TariffSolver Lite</h1>
+    <label for="product-description">Product Description</label>
+    <textarea id="product-description" rows="4" placeholder="e.g., Cotton men's t-shirt with crew neck"></textarea>
+
+    <label for="destination-country">Destination Country</label>
+    <select id="destination-country">
+        <option value="">Select a country</option>
+        <option value="US">United States</option>
+        <option value="CA">Canada</option>
+        <option value="GB">United Kingdom</option>
+        <option value="AU">Australia</option>
+        <option value="DE">Germany</option>
+        <option value="FR">France</option>
+        <option value="IN">India</option>
+        <option value="CN">China</option>
+        <option value="JP">Japan</option>
+    </select>
+
+    <button id="submit-button">Classify Product</button>
+
+    <div class="result" id="result-box"></div>
+
+    <div class="mailchimp">
+        <h3>Join Our Beta List</h3>
+        <p>Get notified when full classification & duty tools launch:</p>
+        <form action="https://example.usX.list-manage.com/subscribe/post" method="POST" target="_blank">
+            <input type="email" name="EMAIL" placeholder="Your email address" required>
+            <input type="submit" value="Subscribe">
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById("submit-button").addEventListener("click", async () => {
+    const desc = document.getElementById("product-description").value.trim();
+    const country = document.getElementById("destination-country").value;
+
+    if (!desc || !country) {
+        alert("Please enter a product description and select a destination country.");
+        return;
+    }
+
+    const resultBox = document.getElementById("result-box");
+    resultBox.style.display = "none";
+    resultBox.innerHTML = "Classifying...";
+
+    try {
+        const response = await fetch("https://api.tariffsolver.com/classify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ description: desc, destination_country: country })
+        });
+
+        const data = await response.json();
+
+        resultBox.style.display = "block";
+        resultBox.innerHTML = data.hs_code
+            ? `<strong>HS Code:</strong> ${data.hs_code}<br><strong>Confidence:</strong> ${data.confidence || 'N/A'}%`
+            : "Classification failed. Try again.";
+    } catch (error) {
+        resultBox.style.display = "block";
+        resultBox.innerHTML = "Error connecting to the API.";
+    }
+});
+</script>
+</body>
+</html>
