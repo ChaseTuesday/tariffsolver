@@ -4,7 +4,7 @@ async function classifyProduct() {
   output.textContent = "Classifying...";
 
   try {
-    const res = await fetch("https://tslite-api.onrender.com/api/classify", {
+    const res = await fetch("https://tslite-api.onrender.com/classify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ description })
