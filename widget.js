@@ -1,9 +1,9 @@
-// widget.js — TSLite hotfix v3
+// widget.js — TSLite PROD v4 (keeps your existing page look)
 (function () {
   const API_URL = "https://tslite-api.onrender.com/classify";
-  const VERSION = "TSLite hotfix v3";
+  const VERSION = "TSLite PROD v4";
 
-  const $ = (s, r = document) => r.querySelector(s);
+  const $ = (s, r=document) => r.querySelector(s);
   const setHTML = (el, html) => { if (el) el.innerHTML = html; };
   const setText = (el, t) => { if (el) el.textContent = t; };
 
@@ -20,19 +20,19 @@
       throw new Error(msg);
     }
     return {
-      hts_code:   data.hts_code ?? "",
-      product:    data.product ?? "",
-      duty_rate:  data.duty_rate ?? "",
-      vat:        data.vat ?? "",
-      tlc:        data.tlc ?? "",
-      rationale:  data.rationale ?? ""
+      hts_code:  data.hts_code ?? "",
+      product:   data.product ?? "",
+      duty_rate: data.duty_rate ?? "",
+      vat:       data.vat ?? "",
+      tlc:       data.tlc ?? "",
+      rationale: data.rationale ?? ""
     };
   }
 
   function render(outEl, d) {
+    // Pure markup; uses your site’s CSS. No styling opinion here.
     setHTML(outEl, `
       <div class="ts-card">
-        <div style="font-size:12px;opacity:.65;margin-bottom:8px">${VERSION}</div>
         <table class="ts-table">
           <tr><th>HTS Code</th><td>${d.hts_code}</td></tr>
           <tr><th>Product</th><td>${d.product}</td></tr>
@@ -41,6 +41,7 @@
           <tr><th>TLC</th><td>${d.tlc}</td></tr>
           <tr><th>Rationale</th><td>${d.rationale}</td></tr>
         </table>
+        <div style="font-size:12px;opacity:.6;margin-top:6px">${VERSION}</div>
       </div>
     `);
   }
@@ -49,40 +50,47 @@
     setHTML(outEl, `<div class="ts-error">Classification failed: ${msg}</div>`);
   }
 
-  async function onSubmit(e) {
-    e.preventDefault();
-    const input = $("#ts-input");
-    const out = $("#ts-output");
-    const btn = $("#ts-submit");
-    const desc = (input?.value || "").trim();
-    if (!desc) return renderError(out, "Please enter a description.");
-
-    btn.disabled = true; setText(btn, "Classifying…");
-    setHTML(out, `<div class="ts-loading">Working…</div>`);
-
-    try {
-      const data = await classify(desc);
-      render(out, data);
-    } catch (err) {
-      console.error("TSLite:", err);
-      renderError(out, err.message || "Unknown error");
-    } finally {
-      btn.disabled = false; setText(btn, "Classify Product");
-    }
-  }
-
   function bind() {
-    const form = $("#ts-form");
-    if (!form) { console.warn("TSLite: #ts-form not found."); return; }
+    const form  = $("#ts-form");
+    const outId = "#ts-output";
+    const btnId = "#ts-submit";
+    const inputId = "#ts-input";
 
-    // Remove any old listeners by cloning, then re-select the new node explicitly
-    const fresh = form.cloneNode(true);
-    form.replaceWith(fresh);
-    const newForm = $("#ts-form");
-    if (!newForm) { console.warn("TSLite: fresh form not found after clone."); return; }
+    if (!form || !$(outId) || !$(btnId) || !$(inputId)) {
+      console.warn(`${VERSION}: required elements missing (#ts-form, #ts-input, #ts-submit, #ts-output)`);
+      return;
+    }
 
-    newForm.addEventListener("submit", onSubmit);
-    console.log(`${VERSION} ready (handler attached)`);
+    // Avoid double-binding on SPA reloads
+    if (form.dataset.bound === "1") return;
+    form.dataset.bound = "1";
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      // Always reselect after any DOM changes
+      const input = $(inputId);
+      const out   = $(outId);
+      const btn   = $(btnId);
+
+      const desc = (input?.value || "").trim();
+      if (!desc) return renderError(out, "Please enter a description.");
+
+      btn.disabled = true; setText(btn, "Classifying…");
+      setHTML(out, `<div class="ts-loading">Working…</div>`);
+
+      try {
+        const data = await classify(desc);
+        render(out, data);
+      } catch (err) {
+        console.error(VERSION, err);
+        renderError(out, err.message || "Unknown error");
+      } finally {
+        btn.disabled = false; setText(btn, "Classify Product");
+      }
+    });
+
+    console.log(`${VERSION} ready`);
   }
 
   if (document.readyState === "loading") {
