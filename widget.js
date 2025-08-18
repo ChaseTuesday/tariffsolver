@@ -1,8 +1,9 @@
-// widget.js — TSLite hotfix v1
+// widget.js — TSLite hotfix v3
 (function () {
   const API_URL = "https://tslite-api.onrender.com/classify";
+  const VERSION = "TSLite hotfix v3";
 
-  const $ = (s, r=document) => r.querySelector(s);
+  const $ = (s, r = document) => r.querySelector(s);
   const setHTML = (el, html) => { if (el) el.innerHTML = html; };
   const setText = (el, t) => { if (el) el.textContent = t; };
 
@@ -18,8 +19,7 @@
       const msg = (data && (data.detail || data.error || data.message)) || text || `HTTP ${res.status}`;
       throw new Error(msg);
     }
-    // Map to the exact fields your API returns
-    const out = {
+    return {
       hts_code:   data.hts_code ?? "",
       product:    data.product ?? "",
       duty_rate:  data.duty_rate ?? "",
@@ -27,12 +27,12 @@
       tlc:        data.tlc ?? "",
       rationale:  data.rationale ?? ""
     };
-    return out;
   }
 
   function render(outEl, d) {
     setHTML(outEl, `
       <div class="ts-card">
+        <div style="font-size:12px;opacity:.65;margin-bottom:8px">${VERSION}</div>
         <table class="ts-table">
           <tr><th>HTS Code</th><td>${d.hts_code}</td></tr>
           <tr><th>Product</th><td>${d.product}</td></tr>
@@ -64,19 +64,30 @@
       const data = await classify(desc);
       render(out, data);
     } catch (err) {
-      console.error(err);
+      console.error("TSLite:", err);
       renderError(out, err.message || "Unknown error");
     } finally {
       btn.disabled = false; setText(btn, "Classify Product");
     }
   }
 
-  // Bind once, replacing any old handler
-  const form = $("#ts-form");
-  if (form) {
-    form.replaceWith(form.cloneNode(true)); // drop old listeners
-    (document.querySelector("#ts-form") || document.body).addEventListener("submit", onSubmit);
+  function bind() {
+    const form = $("#ts-form");
+    if (!form) { console.warn("TSLite: #ts-form not found."); return; }
+
+    // Remove any old listeners by cloning, then re-select the new node explicitly
+    const fresh = form.cloneNode(true);
+    form.replaceWith(fresh);
+    const newForm = $("#ts-form");
+    if (!newForm) { console.warn("TSLite: fresh form not found after clone."); return; }
+
+    newForm.addEventListener("submit", onSubmit);
+    console.log(`${VERSION} ready (handler attached)`);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bind);
   } else {
-    console.warn("TSLite hotfix: #ts-form not found.");
+    bind();
   }
 })();
