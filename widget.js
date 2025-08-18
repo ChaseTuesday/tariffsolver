@@ -1,114 +1,82 @@
-// widget.js — TariffSolver Lite (works with /classify JSON you showed)
-
+// widget.js — TSLite hotfix v1
 (function () {
-  // ===== CONFIG =====
-  // Point this to your live API endpoint
   const API_URL = "https://tslite-api.onrender.com/classify";
-  // If you later switch to your custom domain, change to:
-  // const API_URL = "https://api.tariffsolver.com/classify";
 
-  // ===== HELPERS =====
-  const $ = (sel, root = document) => root.querySelector(sel);
+  const $ = (s, r=document) => r.querySelector(s);
   const setHTML = (el, html) => { if (el) el.innerHTML = html; };
-  const setText = (el, txt) => { if (el) el.textContent = txt; };
+  const setText = (el, t) => { if (el) el.textContent = t; };
 
-  async function postJSON(url, payload, timeoutMs = 30000) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: controller.signal
-      });
-      clearTimeout(timer);
-
-      const text = await res.text(); // read raw first for better error surfaces
-      let data = null;
-      try { data = JSON.parse(text); } catch { /* not JSON */ }
-
-      if (!res.ok) {
-        const detail = (data && (data.detail || data.error || data.message)) || text || `HTTP ${res.status}`;
-        throw new Error(detail);
-      }
-      if (!data || typeof data !== "object") {
-        throw new Error("API returned empty body or non-JSON.");
-      }
-
-      // Sanity check for the keys your API returns
-      const expected = ["hts_code", "product", "duty_rate", "vat", "tlc", "rationale"];
-      for (const k of expected) {
-        if (!(k in data)) throw new Error(`Missing expected key: ${k}`);
-      }
-      return data;
-    } catch (err) {
-      if (err.name === "AbortError") throw new Error("Request timed out (cold start or network hiccup).");
-      throw err;
+  async function classify(desc) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: desc })
+    });
+    const text = await res.text();
+    let data = null; try { data = JSON.parse(text); } catch {}
+    if (!res.ok || !data) {
+      const msg = (data && (data.detail || data.error || data.message)) || text || `HTTP ${res.status}`;
+      throw new Error(msg);
     }
+    // Map to the exact fields your API returns
+    const out = {
+      hts_code:   data.hts_code ?? "",
+      product:    data.product ?? "",
+      duty_rate:  data.duty_rate ?? "",
+      vat:        data.vat ?? "",
+      tlc:        data.tlc ?? "",
+      rationale:  data.rationale ?? ""
+    };
+    return out;
   }
 
-  function renderResult(outEl, d) {
-    const html = `
+  function render(outEl, d) {
+    setHTML(outEl, `
       <div class="ts-card">
         <table class="ts-table">
-          <tr><th>HTS Code</th><td>${d.hts_code ?? ""}</td></tr>
-          <tr><th>Product</th><td>${d.product ?? ""}</td></tr>
-          <tr><th>Duty Rate</th><td>${d.duty_rate ?? ""}</td></tr>
-          <tr><th>VAT</th><td>${d.vat ?? ""}</td></tr>
-          <tr><th>TLC</th><td>${d.tlc ?? ""}</td></tr>
-          <tr><th>Rationale</th><td>${d.rationale ?? ""}</td></tr>
+          <tr><th>HTS Code</th><td>${d.hts_code}</td></tr>
+          <tr><th>Product</th><td>${d.product}</td></tr>
+          <tr><th>Duty Rate</th><td>${d.duty_rate}</td></tr>
+          <tr><th>VAT</th><td>${d.vat}</td></tr>
+          <tr><th>TLC</th><td>${d.tlc}</td></tr>
+          <tr><th>Rationale</th><td>${d.rationale}</td></tr>
         </table>
       </div>
-    `;
-    setHTML(outEl, html);
+    `);
   }
 
-  function renderError(outEl, message) {
-    setHTML(outEl, `<div class="ts-error">Classification failed: ${message}</div>`);
+  function renderError(outEl, msg) {
+    setHTML(outEl, `<div class="ts-error">Classification failed: ${msg}</div>`);
   }
 
-  async function handleSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
     const input = $("#ts-input");
     const out = $("#ts-output");
     const btn = $("#ts-submit");
+    const desc = (input?.value || "").trim();
+    if (!desc) return renderError(out, "Please enter a description.");
 
-    if (!input || !out || !btn) {
-      console.error("Missing #ts-input, #ts-output, or #ts-submit in the page.");
-      return;
-    }
-
-    const desc = (input.value || "").trim();
-    if (!desc) {
-      renderError(out, "Please enter a description.");
-      return;
-    }
-
-    setText(btn, "Classifying…");
-    btn.disabled = true;
+    btn.disabled = true; setText(btn, "Classifying…");
     setHTML(out, `<div class="ts-loading">Working…</div>`);
 
     try {
-      const data = await postJSON(API_URL, { description: desc });
-      renderResult(out, data);
+      const data = await classify(desc);
+      render(out, data);
     } catch (err) {
-      console.error("Classify failed:", err);
+      console.error(err);
       renderError(out, err.message || "Unknown error");
     } finally {
-      setText(btn, "Classify Product");
-      btn.disabled = false;
+      btn.disabled = false; setText(btn, "Classify Product");
     }
   }
 
-  function init() {
-    const form = $("#ts-form");
-    if (form) form.addEventListener("submit", handleSubmit);
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+  // Bind once, replacing any old handler
+  const form = $("#ts-form");
+  if (form) {
+    form.replaceWith(form.cloneNode(true)); // drop old listeners
+    (document.querySelector("#ts-form") || document.body).addEventListener("submit", onSubmit);
   } else {
-    init();
+    console.warn("TSLite hotfix: #ts-form not found.");
   }
 })();
