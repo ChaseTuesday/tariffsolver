@@ -1,165 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TariffSolver Lite — Demo</title>
+  <meta charset="UTF-8">
+  <title>TariffSolver Lite Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Optional: your own CSS -->
   <style>
-    :root { --bg:#f8fafc; --card:#ffffff; --text:#0f172a; --muted:#475569; --line:#e2e8f0; --accent:#0ea5e9; }
-    * { box-sizing:border-box; }
-    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; background:var(--bg); color:var(--text); }
-    .wrap { max-width:880px; margin:40px auto; padding:0 16px; }
-    header h1 { margin:0 0 8px; font-size:26px; }
-    header p { margin:0; color:var(--muted); }
-    .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,.05); }
-    textarea { width:100%; min-height:96px; resize:vertical; font:inherit; padding:10px 12px; border:1px solid var(--line); border-radius:8px; }
-    .row { display:flex; gap:12px; align-items:center; margin-top:12px; flex-wrap:wrap; }
-    button { border:1px solid var(--accent); background:var(--accent); color:#fff; padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer; }
-    button[disabled]{ opacity:.65; cursor:not-allowed; }
-    .hint { color:var(--muted); font-size:13px; }
-    #ts-output { margin-top:16px; }
-    .ts-card { border:1px solid var(--line); border-radius:12px; padding:12px; background:#fff; }
-    .ts-table { width:100%; border-collapse:collapse; }
-    .ts-table th { text-align:left; width:180px; padding:8px 10px; background:#f7fafc; border-bottom:1px solid var(--line); vertical-align:top; }
-    .ts-table td { padding:8px 10px; border-bottom:1px solid var(--line); }
-    .ts-error { color:#b00020; padding:10px 12px; background:#ffecec; border:1px solid #f4bcbc; border-radius:10px; }
-    .ts-loading { opacity:.85; font-style:italic; }
-    footer { margin:32px 0 12px; color:var(--muted); font-size:12px; text-align:center; }
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    #ts-form { margin-bottom: 1rem; }
+    #ts-input { width: 100%; max-width: 400px; padding: 8px; }
+    #ts-submit { margin-top: 0.5rem; padding: 8px 12px; }
+    .ts-card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-top: 1rem; }
+    .ts-table { width: 100%; border-collapse: collapse; }
+    .ts-table th { text-align: left; width: 160px; padding: 6px 8px; background: #f7f7f7; }
+    .ts-table td { padding: 6px 8px; }
+    .ts-error { color: #b00020; padding: 8px; background: #ffecec; border: 1px solid #f4bcbc; border-radius: 4px; margin-top: 1rem; }
+    .ts-loading { font-style: italic; opacity: 0.7; margin-top: 1rem; }
+    #ts-diagnostics { font-size: 12px; color: #666; margin-top: 1rem; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>TariffSolver Lite — Classification Demo</h1>
-      <p>Paste a short product description and hit “Classify Product”.</p>
-    </header>
 
-    <section class="card">
-      <form id="ts-form" autocomplete="off">
-        <label for="ts-input" class="hint">Example: “cotton t‑shirt”, “polyester cycling jersey”</label>
-        <textarea id="ts-input" placeholder="Describe your product…"></textarea>
-        <div class="row">
-          <button id="ts-submit" type="submit">Classify Product</button>
-          <div class="hint">API: <code>https://tslite-api.onrender.com/classify</code></div>
-        </div>
-      </form>
+  <h1>TariffSolver Lite</h1>
 
-      <div id="ts-output"></div>
+  <!-- Classification form -->
+  <form id="ts-form">
+    <textarea id="ts-input" rows="3" placeholder="Describe your product…"></textarea><br>
+    <button id="ts-submit" type="submit">Classify Product</button>
+  </form>
 
-      <details class="hint" style="margin-top:12px;">
-        <summary>Diagnostics</summary>
-        <div id="diag"></div>
-      </details>
-    </section>
+  <!-- Output area -->
+  <div id="ts-output"></div>
 
-    <footer>© TariffSolver</footer>
-  </div>
+  <!-- Diagnostics area -->
+  <div id="ts-diagnostics">Widget loading…</div>
 
-  <!-- Inline widget logic (no external JS needed) -->
-  <script>
-  (function () {
-    const API_URL = "https://tslite-api.onrender.com/classify";
-    const VERSION = "TSLite inline v4";
-
-    const $ = (s, r=document) => r.querySelector(s);
-    const setHTML = (el, html) => { if (el) el.innerHTML = html; };
-    const setText = (el, t) => { if (el) el.textContent = t; };
-
-    async function classify(desc) {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type":"application/json" },
-        body: JSON.stringify({ description: desc })
-      });
-      const text = await res.text();
-      let data = null; try { data = JSON.parse(text); } catch {}
-      if (!res.ok || !data) {
-        const msg = (data && (data.detail||data.error||data.message)) || text || ("HTTP "+res.status);
-        throw new Error(msg);
-      }
-      return {
-        hts_code:  data.hts_code ?? "",
-        product:   data.product ?? "",
-        duty_rate: data.duty_rate ?? "",
-        vat:       data.vat ?? "",
-        tlc:       data.tlc ?? "",
-        rationale: data.rationale ?? ""
-      };
-    }
-
-    function render(outEl, d) {
-      setHTML(outEl, `
-        <div class="ts-card">
-          <div style="font-size:12px;opacity:.65;margin-bottom:8px">${VERSION}</div>
-          <table class="ts-table">
-            <tr><th>HTS Code</th><td>${d.hts_code}</td></tr>
-            <tr><th>Product</th><td>${d.product}</td></tr>
-            <tr><th>Duty Rate</th><td>${d.duty_rate}</td></tr>
-            <tr><th>VAT</th><td>${d.vat}</td></tr>
-            <tr><th>TLC</th><td>${d.tlc}</td></tr>
-            <tr><th>Rationale</th><td>${d.rationale}</td></tr>
-          </table>
-        </div>
-      `);
-    }
-
-    function renderError(outEl, msg) {
-      setHTML(outEl, `<div class="ts-error">Classification failed: ${msg}</div>`);
-    }
-
-    function bind() {
-      const form = $("#ts-form");
-      const input = $("#ts-input");
-      const out = $("#ts-output");
-      const btn = $("#ts-submit");
-      const diag = $("#diag");
-
-      if (diag) {
-        const line = t => "<div>"+t+"</div>";
-        diag.innerHTML =
-          line("Version: "+VERSION) +
-          line("Form: " + (!!form ? "✅" : "⛔")) +
-          line("Input: " + (!!input ? "✅" : "⛔")) +
-          line("Button: " + (!!btn ? "✅" : "⛔")) +
-          line("Output: " + (!!out ? "✅" : "⛔")) +
-          line("Endpoint: "+API_URL);
-      }
-
-      if (!form || !input || !out || !btn) return;
-
-      // Remove any stale listeners by cloning the form
-      const fresh = form.cloneNode(true);
-      form.replaceWith(fresh);
-      const newForm = $("#ts-form");
-
-      newForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const desc = (input.value || "").trim();
-        if (!desc) return renderError(out, "Please enter a description.");
-
-        btn.disabled = true; setText(btn, "Classifying…");
-        setHTML(out, `<div class="ts-loading">Working…</div>`);
-
-        try {
-          const data = await classify(desc);
-          render(out, data);
-        } catch (err) {
-          console.error("TSLite:", err);
-          renderError(out, err.message || "Unknown error");
-        } finally {
-          btn.disabled = false; setText(btn, "Classify Product");
-        }
-      });
-
-      console.log(VERSION+" ready");
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", bind);
-    } else {
-      bind();
-    }
-  })();
-<script src="/widget.js?v=tslite-prod-v4"></script>
+  <!-- 👇 Script tag goes here -->
+  <script src="/widget.js?v=tslite-prod-v4"></script>
 </body>
 </html>
+
