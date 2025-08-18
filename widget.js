@@ -1,191 +1,111 @@
-/* TariffSolver Lite - widget.js (complete)
-   - Calls POST /classify (and falls back to /classify/)
-   - Shows spinner, handles timeouts & errors cleanly
-   - Auto-initializes on DOMContentLoaded
+// widget.js — TariffSolver Lite (works with /classify JSON you showed)
 
-   Expected HTML (if you already have it):
-     <div id="tslite-widget">
-       <form id="tslite-form">
-         <input id="tslite-input" type="text" placeholder="Describe the product…" required />
-         <button id="tslite-submit" type="submit">Classify</button>
-       </form>
-       <div id="tslite-status"></div>
-       <pre id="tslite-result"></pre>
-       <pre id="tslite-error" style="color:red;"></pre>
-     </div>
+(function () {
+  // ===== CONFIG =====
+  // Point this to your live API endpoint
+  const API_URL = "https://tslite-api.onrender.com/classify";
+  // If you later switch to your custom domain, change to:
+  // const API_URL = "https://api.tariffsolver.com/classify";
 
-   If those elements do NOT exist, this script will create a minimal UI automatically.
-*/
+  // ===== HELPERS =====
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const setHTML = (el, html) => { if (el) el.innerHTML = html; };
+  const setText = (el, txt) => { if (el) el.textContent = txt; };
 
-(() => {
-  // ======== CONFIG ========
-  const API_BASE = "https://tslite-api.onrender.com"; // Render service base
-  const ENDPOINTS = ["/classify", "/classify/"];      // try both (no slash, then slash)
-  const REQUEST_TIMEOUT_MS = 15000;                   // 15s
-
-  // ======== UTILITIES ========
-  const $ = (id) => document.getElementById(id);
-  const setText = (id, msg) => { const el = $(id); if (el) el.textContent = msg ?? ""; };
-  const setHTML = (id, html) => { const el = $(id); if (el) el.innerHTML = html ?? ""; };
-  const show = (id, on = true) => { const el = $(id); if (el) el.style.display = on ? "" : "none"; };
-  const disable = (id, on = true) => { const el = $(id); if (el) el.disabled = !!on; };
-
-  function ensureMinimalUI() {
-    let root = $("tslite-widget");
-    if (!root) {
-      root = document.createElement("div");
-      root.id = "tslite-widget";
-      root.style.maxWidth = "680px";
-      root.style.margin = "1rem auto";
-      root.style.fontFamily = "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-      document.body.appendChild(root);
-    }
-
-    if (!$("tslite-form")) {
-      root.innerHTML = `
-        <form id="tslite-form" style="display:flex;gap:.5rem;align-items:center;">
-          <input id="tslite-input" type="text" placeholder="Describe the product…" required
-                 style="flex:1;padding:.7rem;border:1px solid #ccc;border-radius:6px;" />
-          <button id="tslite-submit" type="submit" style="padding:.7rem 1rem;border:0;border-radius:6px;cursor:pointer;">
-            Classify
-          </button>
-        </form>
-        <div id="tslite-status" style="margin:.5rem 0;font-size:.9rem;color:#555"></div>
-        <pre id="tslite-result" style="background:#0b1220;color:#cfe3ff;padding:12px;border-radius:8px;white-space:pre-wrap;"></pre>
-        <pre id="tslite-error"  style="color:#b00020;white-space:pre-wrap;"></pre>
-      `;
-    } else {
-      // Ensure placeholders for status/result/error exist
-      if (!$("tslite-status")) {
-        const status = document.createElement("div"); status.id = "tslite-status"; root.appendChild(status);
-      }
-      if (!$("tslite-result")) {
-        const r = document.createElement("pre"); r.id = "tslite-result"; root.appendChild(r);
-      }
-      if (!$("tslite-error")) {
-        const e = document.createElement("pre"); e.id = "tslite-error"; e.style.color = "red"; root.appendChild(e);
-      }
-    }
-  }
-
-  function spinner(on) {
-    const el = $("tslite-status");
-    if (!el) return;
-    if (on) {
-      el.innerHTML = `⏳ <em>Classifying…</em>`;
-    } else {
-      el.textContent = "";
-    }
-  }
-
-  function toJSONSafe(textOrObj) {
-    // Accept object or JSON string; try to parse if needed
-    if (typeof textOrObj === "object") return textOrObj;
-    try { return JSON.parse(textOrObj); } catch { return textOrObj; }
-  }
-
-  async function tryFetchWithTimeout(url, options, timeoutMs) {
+  async function postJSON(url, payload, timeoutMs = 30000) {
     const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), timeoutMs);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await fetch(url, { ...options, signal: controller.signal });
-      return res;
-    } finally {
-      clearTimeout(t);
-    }
-  }
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
 
-  async function postClassify(description) {
-    const options = {
-      method: "POST",
-      mode: "cors",
-      cache: "no-store",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description }),
-    };
+      const text = await res.text(); // read raw first for better error surfaces
+      let data = null;
+      try { data = JSON.parse(text); } catch { /* not JSON */ }
 
-    let lastErr = null;
-
-    // Try /classify then /classify/
-    for (const ep of ENDPOINTS) {
-      const url = API_BASE + ep;
-      try {
-        const res = await tryFetchWithTimeout(url, options, REQUEST_TIMEOUT_MS);
-        if (!res.ok) {
-          // if 404, try the next endpoint; otherwise surface the error
-          if (res.status === 404) {
-            lastErr = new Error(`HTTP 404 at ${ep}`);
-            continue;
-          }
-          let extra = "";
-          try { extra = JSON.stringify(await res.json()); } catch {}
-          throw new Error(`HTTP ${res.status} ${res.statusText}${extra ? " — " + extra : ""}`);
-        }
-
-        // Some backends return JSON, others return a JSON string; handle both
-        const contentType = res.headers.get("content-type") || "";
-        if (contentType.includes("application/json")) {
-          return await res.json();
-        } else {
-          const text = await res.text();
-          return toJSONSafe(text);
-        }
-      } catch (err) {
-        lastErr = err;
-        // If aborted (timeout), don't keep retrying endpoints endlessly
-        if (String(err).includes("AbortError")) break;
+      if (!res.ok) {
+        const detail = (data && (data.detail || data.error || data.message)) || text || `HTTP ${res.status}`;
+        throw new Error(detail);
       }
+      if (!data || typeof data !== "object") {
+        throw new Error("API returned empty body or non-JSON.");
+      }
+
+      // Sanity check for the keys your API returns
+      const expected = ["hts_code", "product", "duty_rate", "vat", "tlc", "rationale"];
+      for (const k of expected) {
+        if (!(k in data)) throw new Error(`Missing expected key: ${k}`);
+      }
+      return data;
+    } catch (err) {
+      if (err.name === "AbortError") throw new Error("Request timed out (cold start or network hiccup).");
+      throw err;
     }
-    throw lastErr || new Error("Request failed");
   }
 
-  function pretty(obj) {
-    if (typeof obj === "string") return obj;
-    try { return JSON.stringify(obj, null, 2); } catch { return String(obj); }
+  function renderResult(outEl, d) {
+    const html = `
+      <div class="ts-card">
+        <table class="ts-table">
+          <tr><th>HTS Code</th><td>${d.hts_code ?? ""}</td></tr>
+          <tr><th>Product</th><td>${d.product ?? ""}</td></tr>
+          <tr><th>Duty Rate</th><td>${d.duty_rate ?? ""}</td></tr>
+          <tr><th>VAT</th><td>${d.vat ?? ""}</td></tr>
+          <tr><th>TLC</th><td>${d.tlc ?? ""}</td></tr>
+          <tr><th>Rationale</th><td>${d.rationale ?? ""}</td></tr>
+        </table>
+      </div>
+    `;
+    setHTML(outEl, html);
+  }
+
+  function renderError(outEl, message) {
+    setHTML(outEl, `<div class="ts-error">Classification failed: ${message}</div>`);
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const input = $("#ts-input");
+    const out = $("#ts-output");
+    const btn = $("#ts-submit");
 
-    const input = $("tslite-input");
-    const btn = $("tslite-submit");
-
-    setText("tslite-error", "");
-    setText("tslite-result", "");
-
-    const desc = (input?.value || "").trim();
-    if (!desc) {
-      setText("tslite-error", "Please enter a product description.");
+    if (!input || !out || !btn) {
+      console.error("Missing #ts-input, #ts-output, or #ts-submit in the page.");
       return;
     }
 
-    spinner(true);
-    disable("tslite-submit", true);
+    const desc = (input.value || "").trim();
+    if (!desc) {
+      renderError(out, "Please enter a description.");
+      return;
+    }
+
+    setText(btn, "Classifying…");
+    btn.disabled = true;
+    setHTML(out, `<div class="ts-loading">Working…</div>`);
 
     try {
-      const data = await postClassify(desc);
-      setText("tslite-result", pretty(data));
+      const data = await postJSON(API_URL, { description: desc });
+      renderResult(out, data);
     } catch (err) {
-      setText("tslite-error", (err && err.message) ? err.message : String(err));
+      console.error("Classify failed:", err);
+      renderError(out, err.message || "Unknown error");
     } finally {
-      spinner(false);
-      disable("tslite-submit", false);
+      setText(btn, "Classify Product");
+      btn.disabled = false;
     }
   }
 
   function init() {
-    ensureMinimalUI();
-    const form = $("tslite-form");
-    if (!form) {
-      console.error("[TariffSolver Lite] Missing #tslite-form; could not initialize.");
-      return;
-    }
-    form.addEventListener("submit", handleSubmit);
-    // Optional: health ping to surface backend readiness quickly
-    setHTML("tslite-status", `Ready.`);
+    const form = $("#ts-form");
+    if (form) form.addEventListener("submit", handleSubmit);
   }
 
-  // Auto-init on page load
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
