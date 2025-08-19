@@ -1,43 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>TariffSolver Lite Demo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TariffSolver Lite — Demo</title>
 
-  <!-- Optional: your own CSS -->
+  <!-- Minimal tasteful styles; keep or replace with your theme -->
   <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; }
-    #ts-form { margin-bottom: 1rem; }
-    #ts-input { width: 100%; max-width: 400px; padding: 8px; }
-    #ts-submit { margin-top: 0.5rem; padding: 8px 12px; }
-    .ts-card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; margin-top: 1rem; }
+    :root { --bg:#f8fafc; --card:#ffffff; --text:#0f172a; --muted:#475569; --line:#e2e8f0; --accent:#0ea5e9; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; background:var(--bg); color:var(--text); }
+    .wrap { max-width: 880px; margin: 40px auto; padding: 0 16px; }
+    header { margin-bottom: 20px; }
+    header h1 { margin: 0 0 6px; font-size: 28px; }
+    header p { margin: 0; color: var(--muted); }
+
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    textarea { width: 100%; resize: vertical; min-height: 104px; font: inherit; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
+    .row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+    button { appearance:none; border: 1px solid var(--accent); background: var(--accent); color:#fff; padding:10px 14px; border-radius: 12px; font-weight:600; cursor:pointer; }
+    button[disabled]{ opacity:.65; cursor:not-allowed; }
+    .hint { color: var(--muted); font-size: 13px; }
+
+    #ts-output { margin-top: 16px; }
+    .ts-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; }
     .ts-table { width: 100%; border-collapse: collapse; }
-    .ts-table th { text-align: left; width: 160px; padding: 6px 8px; background: #f7f7f7; }
-    .ts-table td { padding: 6px 8px; }
-    .ts-error { color: #b00020; padding: 8px; background: #ffecec; border: 1px solid #f4bcbc; border-radius: 4px; margin-top: 1rem; }
-    .ts-loading { font-style: italic; opacity: 0.7; margin-top: 1rem; }
-    #ts-diagnostics { font-size: 12px; color: #666; margin-top: 1rem; }
+    .ts-table th { text-align: left; width: 180px; padding: 8px 10px; background: #f7fafc; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .ts-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); }
+    .ts-error { color: #b00020; padding: 10px 12px; background: #ffecec; border: 1px solid #f4bcbc; border-radius: 10px; }
+    .ts-loading { opacity: .85; font-style: italic; }
+
+    footer { margin: 32px 0 12px; color: var(--muted); font-size: 12px; text-align: center; }
   </style>
 </head>
 <body>
+  <div class="wrap">
+    <header>
+      <h1>TariffSolver Lite — Classification Demo</h1>
+      <p>Paste a short product description and hit “Classify Product”.</p>
+    </header>
 
-  <h1>TariffSolver Lite</h1>
+    <section class="card">
+      <form id="ts-form" autocomplete="off">
+        <label for="ts-input" class="hint">Example: “cotton t‑shirt”, “wool sweater”, “leather wallet”</label>
+        <textarea id="ts-input" placeholder="Describe your product…"></textarea>
+        <div class="row">
+          <button id="ts-submit" type="submit">Classify Product</button>
+          <div class="hint">API: <code>https://tslite-api.onrender.com/classify</code></div>
+        </div>
+      </form>
 
-  <!-- Classification form -->
-  <form id="ts-form">
-    <textarea id="ts-input" rows="3" placeholder="Describe your product…"></textarea><br>
-    <button id="ts-submit" type="submit">Classify Product</button>
-  </form>
+      <div id="ts-output"></div>
+    </section>
 
-  <!-- Output area -->
-  <div id="ts-output"></div>
+    <footer>© TariffSolver</footer>
+  </div>
 
-  <!-- Diagnostics area -->
-  <div id="ts-diagnostics">Widget loading…</div>
-
-  <!-- 👇 Script tag goes here -->
-  <script src="/widget.js?v=tslite-prod-v4"></script>
+  <!-- Load the production widget (cache-busted) -->
+  <script src="/widget.js?v=tslite-prod-v5"></script>
 </body>
 </html>
-
