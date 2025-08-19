@@ -1,7 +1,7 @@
-// widget.js — TSLite PROD v4 (keeps your existing page look)
+// widget.js — TSLite PROD v5 (live API, clean errors, no CSS opinion)
 (function () {
   const API_URL = "https://tslite-api.onrender.com/classify";
-  const VERSION = "TSLite PROD v4";
+  const VERSION = "TSLite PROD v5";
 
   const $ = (s, r=document) => r.querySelector(s);
   const setHTML = (el, html) => { if (el) el.innerHTML = html; };
@@ -13,24 +13,24 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ description: desc })
     });
-    const text = await res.text();
+    const text = await res.text();        // read raw first (better error surfacing)
     let data = null; try { data = JSON.parse(text); } catch {}
     if (!res.ok || !data) {
       const msg = (data && (data.detail || data.error || data.message)) || text || `HTTP ${res.status}`;
       throw new Error(msg);
     }
+    // Map the exact fields your API returns
     return {
       hts_code:  data.hts_code ?? "",
-      product:   data.product ?? "",
-      duty_rate: data.duty_rate ?? "",
-      vat:       data.vat ?? "",
-      tlc:       data.tlc ?? "",
+      product:   data.product ?? desc,
+      duty_rate: data.duty_rate ?? "N/A",
+      vat:       data.vat ?? "N/A",
+      tlc:       data.tlc ?? "N/A",
       rationale: data.rationale ?? ""
     };
   }
 
   function render(outEl, d) {
-    // Pure markup; uses your site’s CSS. No styling opinion here.
     setHTML(outEl, `
       <div class="ts-card">
         <table class="ts-table">
@@ -51,27 +51,27 @@
   }
 
   function bind() {
-    const form  = $("#ts-form");
-    const outId = "#ts-output";
-    const btnId = "#ts-submit";
-    const inputId = "#ts-input";
+    const form   = $("#ts-form");
+    const outSel = "#ts-output";
+    const btnSel = "#ts-submit";
+    const inSel  = "#ts-input";
 
-    if (!form || !$(outId) || !$(btnId) || !$(inputId)) {
+    if (!form || !$(outSel) || !$(btnSel) || !$(inSel)) {
       console.warn(`${VERSION}: required elements missing (#ts-form, #ts-input, #ts-submit, #ts-output)`);
       return;
     }
 
-    // Avoid double-binding on SPA reloads
+    // Avoid double-binding across SPA reloads
     if (form.dataset.bound === "1") return;
     form.dataset.bound = "1";
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
-      // Always reselect after any DOM changes
-      const input = $(inputId);
-      const out   = $(outId);
-      const btn   = $(btnId);
+      // Always re-select in case DOM changed
+      const input = $(inSel);
+      const out   = $(outSel);
+      const btn   = $(btnSel);
 
       const desc = (input?.value || "").trim();
       if (!desc) return renderError(out, "Please enter a description.");
