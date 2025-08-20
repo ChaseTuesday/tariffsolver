@@ -8,7 +8,7 @@
   const setText = (el, t) => { if (el) el.textContent = t; };
 
   async function classify(desc) {
-    const res = await fetch(API_URL, {
+    const API_URL = "https://tslite-api.onrender.com/classify"; {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ description: desc })
