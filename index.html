@@ -3,60 +3,192 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>TariffSolver Lite — Demo</title>
+  <title>TariffSolver Lite — AI HS Classification for Merchants</title>
 
-  <!-- Minimal tasteful styles; keep or replace with your theme -->
+  <!-- Minimal, tidy styles (replace with your theme anytime) -->
   <style>
-    :root { --bg:#f8fafc; --card:#ffffff; --text:#0f172a; --muted:#475569; --line:#e2e8f0; --accent:#0ea5e9; }
+    :root { --bg:#f8fafc; --card:#ffffff; --text:#0f172a; --muted:#475569; --line:#e2e8f0; --accent:#0ea5e9; --ok:#16a34a; --err:#b00020; }
     * { box-sizing: border-box; }
     body { margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; background:var(--bg); color:var(--text); }
-    .wrap { max-width: 880px; margin: 40px auto; padding: 0 16px; }
-    header { margin-bottom: 20px; }
-    header h1 { margin: 0 0 6px; font-size: 28px; }
-    header p { margin: 0; color: var(--muted); }
+    .wrap { max-width: 980px; margin: 40px auto; padding: 0 16px; }
+
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom: 20px; }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .logo { width: 36px; height: 36px; border-radius:8px; background:var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+    .brand h1 { margin:0; font-size: 22px; }
+    .sub { color: var(--muted); margin: 2px 0 0; font-size: 14px; }
+
+    .grid { display:grid; grid-template-columns: 1.3fr .7fr; gap:20px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
 
     .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .muted { color: var(--muted); }
+    .pill { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--line); border-radius:999px; font-size:12px; color:var(--muted); }
+    .pill.ok { color:var(--ok); border-color:#cde9d7; background:#eefaf2; }
+    .pill.err { color:var(--err); border-color:#f4bcbc; background:#ffecec; }
+
     textarea { width: 100%; resize: vertical; min-height: 104px; font: inherit; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
     .row { display: flex; gap: 12px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
-    button { appearance:none; border: 1px solid var(--accent); background: var(--accent); color:#fff; padding:10px 14px; border-radius: 12px; font-weight:600; cursor:pointer; }
-    button[disabled]{ opacity:.65; cursor:not-allowed; }
-    .hint { color: var(--muted); font-size: 13px; }
+    .btn { appearance:none; border: 1px solid var(--accent); background: var(--accent); color:#fff; padding:10px 14px; border-radius: 12px; font-weight:600; cursor:pointer; }
+    .btn.secondary { background:#fff; color:var(--accent); }
+    .btn[disabled]{ opacity:.65; cursor:not-allowed; }
 
+    /* Results */
     #ts-output { margin-top: 16px; }
     .ts-card { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; }
     .ts-table { width: 100%; border-collapse: collapse; }
     .ts-table th { text-align: left; width: 180px; padding: 8px 10px; background: #f7fafc; border-bottom: 1px solid var(--line); vertical-align: top; }
     .ts-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); }
-    .ts-error { color: #b00020; padding: 10px 12px; background: #ffecec; border: 1px solid #f4bcbc; border-radius: 10px; }
+    .ts-error { color: var(--err); padding: 10px 12px; background: #ffecec; border: 1px solid #f4bcbc; border-radius: 10px; }
     .ts-loading { opacity: .85; font-style: italic; }
 
-    footer { margin: 32px 0 12px; color: var(--muted); font-size: 12px; text-align: center; }
+    /* Lead box / pricing */
+    .lead h3 { margin: 8px 0 6px; font-size: 18px; }
+    .lead p { margin: 4px 0 12px; color:var(--muted); }
+    .lead form { display:flex; gap:8px; flex-wrap:wrap; }
+    .lead input[type="email"] { flex:1; min-width: 220px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+    .lead .msg { font-size: 13px; margin-top: 8px; color:var(--muted); }
+    .price { margin-top:18px; padding-top:14px; border-top:1px dashed var(--line); }
+    .price h4 { margin:6px 0; font-size:16px; }
+    .bullets { margin: 6px 0 12px; padding-left: 18px; color: var(--muted); }
+    .bullets li { margin: 4px 0; }
+    .stripe-btn { display:inline-block; text-decoration:none; }
+    footer { margin: 36px 0 16px; color:var(--muted); font-size: 12px; text-align: center; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>TariffSolver Lite — Classification Demo</h1>
-      <p>Paste a short product description and hit “Classify Product”.</p>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>TariffSolver Lite</h1>
+          <div class="sub">Accurate HS classification & duty rates for Shopify merchants.</div>
+        </div>
+      </div>
+      <div id="mode-pill" class="pill">Checking API…</div>
     </header>
 
-    <section class="card">
-      <form id="ts-form" autocomplete="off">
-        <label for="ts-input" class="hint">Example: “cotton t‑shirt”, “wool sweater”, “leather wallet”</label>
-        <textarea id="ts-input" placeholder="Describe your product…"></textarea>
-        <div class="row">
-          <button id="ts-submit" type="submit">Classify Product</button>
-          <div class="hint">API: <code>https://tslite-api.onrender.com/classify</code></div>
-        </div>
-      </form>
+    <div class="grid">
+      <!-- LEFT: Live demo -->
+      <section class="card">
+        <h2 style="margin:0 0 8px">Try it free</h2>
+        <div class="muted" style="margin-bottom:10px">Paste a short product description and hit “Classify”.</div>
 
-      <div id="ts-output"></div>
-    </section>
+        <form id="ts-form" autocomplete="off">
+          <label for="ts-input" class="muted">Example: “cotton t‑shirt”, “wool sweater”, “leather wallet”</label>
+          <textarea id="ts-input" placeholder="Describe your product…"></textarea>
+          <div class="row">
+            <button id="ts-submit" type="submit" class="btn">Classify Product</button>
+            <div class="muted">API: <code id="api-url">https://tslite-api.onrender.com/classify</code></div>
+          </div>
+        </form>
+
+        <div id="ts-output"></div>
+      </section>
+
+      <!-- RIGHT: Lead capture + pricing -->
+      <aside class="card lead">
+        <h3>Unlock full access</h3>
+        <p>Join the beta and get <b>25 free lookups</b>. We’ll notify you when your store is approved.</p>
+
+        <!-- Lead form: point this to your backend or Mailchimp -->
+        <form id="lead-form">
+          <input type="email" id="lead-email" placeholder="you@store.com" required />
+          <button class="btn secondary" type="submit">Get Started Free</button>
+        </form>
+        <div id="lead-msg" class="msg">No spam. Unsubscribe anytime.</div>
+
+        <div class="price">
+          <h4>TariffSolver Lite — <span>$49/mo</span></h4>
+          <ul class="bullets">
+            <li>Unlimited lookups</li>
+            <li>Instant HS code + duty rate</li>
+            <li>Simple Shopify integration</li>
+          </ul>
+          <!-- Paste your live Stripe Checkout link in the href -->
+          <a class="btn stripe-btn" id="stripe-link" href="https://buy.stripe.com/test_replace_me" target="_blank" rel="noopener">
+            Subscribe with Stripe
+          </a>
+        </div>
+      </aside>
+    </div>
 
     <footer>© TariffSolver</footer>
   </div>
 
-  <!-- Load the production widget (cache-busted) -->
+  <!-- Load your production widget (keeps your existing look) -->
   <script src="/widget.js?v=tslite-prod-v5"></script>
+
+  <!-- Small helpers: health/mode badge + lead form handler -->
+  <script>
+    (function () {
+      const HEALTH_URL = "https://tslite-api.onrender.com/health";
+
+      // Mode badge
+      const pill = document.getElementById("mode-pill");
+      fetch(HEALTH_URL).then(r => r.json()).then(j => {
+        if (j && j.ok) {
+          pill.textContent = (j.mode || "unknown").toUpperCase() + " MODE";
+          pill.classList.add("ok");
+          pill.classList.remove("err");
+          pill.classList.add("pill","ok");
+        } else {
+          throw new Error("Bad health payload");
+        }
+      }).catch(() => {
+        pill.textContent = "API ERROR";
+        pill.classList.add("pill","err");
+      });
+
+      // Lead capture
+      const leadForm = document.getElementById("lead-form");
+      const leadEmail = document.getElementById("lead-email");
+      const leadMsg = document.getElementById("lead-msg");
+
+      leadForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = (leadEmail.value || "").trim();
+        if (!email) return;
+
+        // --- Choose ONE of the following implementations ---
+
+        // (A) Call your backend endpoint (recommended)
+        //     Create a tiny /api/lead endpoint that stores email (Mailchimp/DB).
+        // try {
+        //   const res = await fetch("/api/lead", {
+        //     method: "POST",
+        //     headers: { "Content-Type": "application/json" },
+        //     body: JSON.stringify({ email })
+        //   });
+        //   if (!res.ok) throw new Error(await res.text());
+        //   leadMsg.textContent = "Thanks! Check your email for details.";
+        // } catch (err) {
+        //   leadMsg.textContent = "Could not save email. Please try again.";
+        // }
+
+        // (B) Direct Mailchimp form post (drop in your form action URL)
+        // document.getElementById("mc-form").submit();
+
+        // (C) Simple local fallback (works immediately, no backend)
+        try {
+          const list = JSON.parse(localStorage.getItem("tslite_emails") || "[]");
+          list.push({ email, ts: Date.now() });
+          localStorage.setItem("tslite_emails", JSON.stringify(list));
+          leadMsg.textContent = "Thanks! We’ll be in touch shortly.";
+          leadEmail.value = "";
+        } catch {
+          leadMsg.textContent = "Saved locally. We’ll follow up.";
+        }
+      });
+    })();
+  </script>
+
+  <!-- If you prefer Mailchimp embed, paste it here and make (B) above submit it. -->
+  <!--
+  <form id="mc-form" action="https://YOUR_PREFIX.list-manage.com/subscribe/post?u=XXXX&id=YYYY" method="post" style="display:none">
+    <input type="email" name="EMAIL" id="mce-EMAIL" />
+  </form>
+  -->
 </body>
 </html>
