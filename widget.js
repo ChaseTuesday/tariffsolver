@@ -1,101 +1,120 @@
-// widget.js — TSLite PROD v5 (live API, clean errors, no CSS opinion)
-(function () {
+// widget.js — TariffSolver Lite front-end
+(() => {
+  // ====== CONFIG =============================================================
   const API_URL = "https://tslite-api.onrender.com/classify";
-  const VERSION = "TSLite PROD v5";
 
-  const $ = (s, r=document) => r.querySelector(s);
-  const setHTML = (el, html) => { if (el) el.innerHTML = html; };
-  const setText = (el, t) => { if (el) el.textContent = t; };
+  // ====== DOM ================================================================
+  const $ = (id) => document.getElementById(id);
+  const inputEl = $("productInput");
+  const cooEl = $("coo");
+  const valEl = $("declaredValue");
+  const btnEl = $("classifyBtn");
+  const outEl = $("results");
+  const statusEl = $("apiStatus");
+  const echoEl = $("apiEcho");
 
-  async function classify(desc) {
-    const API_URL = "https://tslite-api.onrender.com/classify"; {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ description: desc })
-    });
-    const text = await res.text();        // read raw first (better error surfacing)
-    let data = null; try { data = JSON.parse(text); } catch {}
-    if (!res.ok || !data) {
-      const msg = (data && (data.detail || data.error || data.message)) || text || `HTTP ${res.status}`;
-      throw new Error(msg);
-    }
-    // Map the exact fields your API returns
-    return {
-      hts_code:  data.hts_code ?? "",
-      product:   data.product ?? desc,
-      duty_rate: data.duty_rate ?? "N/A",
-      vat:       data.vat ?? "N/A",
-      tlc:       data.tlc ?? "N/A",
-      rationale: data.rationale ?? ""
-    };
-  }
+  if (echoEl) echoEl.textContent = API_URL;
 
-  function render(outEl, d) {
-    setHTML(outEl, `
-      <div class="ts-card">
-        <table class="ts-table">
-          <tr><th>HTS Code</th><td>${d.hts_code}</td></tr>
-          <tr><th>Product</th><td>${d.product}</td></tr>
-          <tr><th>Duty Rate</th><td>${d.duty_rate}</td></tr>
-          <tr><th>VAT</th><td>${d.vat}</td></tr>
-          <tr><th>TLC</th><td>${d.tlc}</td></tr>
-          <tr><th>Rationale</th><td>${d.rationale}</td></tr>
-        </table>
-        <div style="font-size:12px;opacity:.6;margin-top:6px">${VERSION}</div>
-      </div>
-    `);
-  }
+  // ====== HELPERS ============================================================
+  const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg || ""; };
+  const esc = (v) => (v == null ? "" : String(v));
 
-  function renderError(outEl, msg) {
-    setHTML(outEl, `<div class="ts-error">Classification failed: ${msg}</div>`);
-  }
+  const renderError = (message) => {
+    outEl.innerHTML = `
+      <div class="error">${esc(message)}</div>
+    `;
+  };
 
-  function bind() {
-    const form   = $("#ts-form");
-    const outSel = "#ts-output";
-    const btnSel = "#ts-submit";
-    const inSel  = "#ts-input";
+  const renderResults = (data) => {
+    // Build rows from the top-level fields
+    const baseRows = [
+      ["Product", esc(data.description ?? data.product_description)],
+      ["HS / HTS Code", esc(data.hts_code)],
+      ["Duty Rate", esc(data.duty_rate)],
+      ["Rationale", esc(data.rationale)],
+    ].filter(([_, v]) => v && v !== "undefined");
 
-    if (!form || !$(outSel) || !$(btnSel) || !$(inSel)) {
-      console.warn(`${VERSION}: required elements missing (#ts-form, #ts-input, #ts-submit, #ts-output)`);
+    // Append items[] rows if supplied by API
+    const itemRows = Array.isArray(data.items)
+      ? data.items.map(it => [esc(it.label), esc(it.value)])
+      : [];
+
+    const rows = [...baseRows, ...itemRows]
+      .map(([k, v]) => `<tr><th>${k}</th><td>${v}</td></tr>`)
+      .join("");
+
+    // Warnings (if any)
+    const warnings = (data.warnings && data.warnings.length)
+      ? `<div style="margin-top:8px"><span class="pill">${data.warnings.length} warning(s)</span></div>`
+      : "";
+
+    outEl.innerHTML = `
+      <table class="table">
+        <thead><tr><th colspan="2">Classification Result</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${warnings}
+    `;
+  };
+
+  // ====== ACTION =============================================================
+  async function classify() {
+    const product = (inputEl?.value || "").trim();
+    const coo = (cooEl?.value || "").trim();
+    const declared = valEl?.value ? Number(valEl.value) : undefined;
+
+    if (!product) {
+      renderError("Please enter a short product description.");
+      inputEl?.focus();
       return;
     }
 
-    // Avoid double-binding across SPA reloads
-    if (form.dataset.bound === "1") return;
-    form.dataset.bound = "1";
+    btnEl.disabled = true;
+    const oldLabel = btnEl.textContent;
+    btnEl.textContent = "Classifying…";
+    setStatus("Calling API…");
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    try {
+      const payload = {
+        // Use the exact keys your API expects (as proven in Swagger)
+        product_description: product,
+        ...(coo ? { country_of_origin: coo } : {}),
+        ...(Number.isFinite(declared) ? { declared_value: declared } : {})
+      };
 
-      // Always re-select in case DOM changed
-      const input = $(inSel);
-      const out   = $(outSel);
-      const btn   = $(btnSel);
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
 
-      const desc = (input?.value || "").trim();
-      if (!desc) return renderError(out, "Please enter a description.");
-
-      btn.disabled = true; setText(btn, "Classifying…");
-      setHTML(out, `<div class="ts-loading">Working…</div>`);
-
-      try {
-        const data = await classify(desc);
-        render(out, data);
-      } catch (err) {
-        console.error(VERSION, err);
-        renderError(out, err.message || "Unknown error");
-      } finally {
-        btn.disabled = false; setText(btn, "Classify Product");
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`API ${res.status}: ${text || "Request failed"}`);
       }
+
+      const data = await res.json();
+      renderResults(data);
+      setStatus("OK");
+    } catch (err) {
+      renderError(err?.message || "Request failed.");
+      setStatus("Error");
+      console.error(err);
+    } finally {
+      btnEl.disabled = false;
+      btnEl.textContent = oldLabel;
+    }
+  }
+
+  // ====== WIRING =============================================================
+  if (btnEl) btnEl.addEventListener("click", classify);
+  if (inputEl) {
+    // Cmd/Ctrl + Enter submits
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) classify();
     });
-
-    console.log(`${VERSION} ready`);
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bind);
-  } else {
-    bind();
-  }
+  // Optional: prefill COO for faster testing
+  cooEl.value = cooEl.value || "CN";
 })();
