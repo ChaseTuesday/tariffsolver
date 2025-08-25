@@ -4,31 +4,31 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>TariffSolver Lite — Quick HS Classification</title>
-  <meta name="description" content="Instant HS/HTS code, duty & VAT estimates for Shopify merchants." />
   <style>
-    :root { --bg:#f8fafc; --card:#fff; --text:#0f172a; --muted:#475569; --line:#e2e8f0; --accent:#0ea5e9; --ok:#16a34a; --err:#b00020; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; background:var(--bg); color:var(--text); }
+    :root { --bg:#f8fafc; --card:#fff; --text:#0f172a; --muted:#475569; --line:#e2e8f0; --accent:#0ea5e9; }
+    * { box-sizing: border-box; } body { margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; background:var(--bg); color:var(--text); }
     header { padding:20px; border-bottom:1px solid var(--line); background:var(--card); }
-    .wrap { max-width:980px; margin:0 auto; padding:24px; }
+    .wrap { max-width:1100px; margin:0 auto; padding:24px; }
     h1 { margin:0; font-size:22px; }
-    .grid { display:grid; grid-template-columns: 1.1fr .9fr; gap:20px; }
+    .grid { display:grid; grid-template-columns: 1.2fr .8fr; gap:20px; }
     .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; }
     label { font-size:14px; color:var(--muted); display:block; margin-bottom:8px; }
     textarea { width:100%; min-height:110px; padding:12px; font:inherit; border:1px solid var(--line); border-radius:8px; resize:vertical; }
-    .row { display:flex; align-items:center; gap:12px; margin-top:12px; }
+    .row { display:flex; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap; }
     input[type="text"], input[type="number"] { width:100%; padding:10px; border:1px solid var(--line); border-radius:8px; font:inherit; }
     button { border:0; border-radius:8px; padding:10px 14px; background:var(--accent); color:#fff; font-weight:600; cursor:pointer; }
-    button[disabled] { opacity:.6; cursor:not-allowed; }
-    small.muted { color:var(--muted); }
-    .status { margin-top:8px; font-size:12px; color:var(--muted); }
+    button.secondary { background:#e2e8f0; color:#0f172a; } button[disabled] { opacity:.6; cursor:not-allowed; }
+    small.muted { color:var(--muted); } .status { margin-top:8px; font-size:12px; color:var(--muted); }
     .result { margin-top:16px; }
     .table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
     .table th, .table td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
     .table thead th { background:#f1f5f9; font-weight:700; }
-    .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#e2fbe2; color:#14532d; }
     .error { background:#fff0f0; border:1px solid #f5c2c7; color:#842029; padding:10px 12px; border-radius:10px; }
-    footer { text-align:center; padding:24px; color:var(--muted); }
+    .tools { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .history-list { list-style:none; padding:0; margin:0; max-height:520px; overflow:auto; }
+    .history-item { border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:10px; background:#fff; cursor:pointer; }
+    .history-item b { display:block; margin-bottom:4px; }
+    .tiny { font-size:12px; color:var(--muted); }
     @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -43,42 +43,45 @@
     <section class="card">
       <label for="productInput">Describe your product</label>
       <textarea id="productInput" placeholder="e.g., cotton t-shirt, leather wallet, wool sweater"></textarea>
-
       <div class="row">
         <div style="flex:1">
           <label for="coo">Country of origin (optional)</label>
           <input id="coo" type="text" placeholder="e.g., CN, VN, US" />
         </div>
-        <div style="width:160px">
+        <div style="width:180px">
           <label for="declaredValue">Declared value (optional)</label>
           <input id="declaredValue" type="number" min="0" step="0.01" placeholder="USD" />
         </div>
       </div>
-
       <div class="row">
         <button id="classifyBtn">Classify Product</button>
         <small id="apiStatus" class="status"></small>
       </div>
 
       <div id="results" class="result"></div>
+
+      <!-- Tools for current result -->
+      <div id="tools" class="tools" style="display:none">
+        <button id="copyBtn" class="secondary">Copy</button>
+        <button id="jsonBtn" class="secondary">Download JSON</button>
+        <button id="csvBtn" class="secondary">Download CSV</button>
+        <span class="tiny muted">API: <span id="apiEcho"></span></span>
+      </div>
     </section>
 
-    <!-- Right: Plan/Notes -->
+    <!-- Right: History & Export -->
     <aside class="card">
-      <h3 style="margin:0 0 8px 0">Unlock full access</h3>
-      <p class="muted" style="margin:0 0 12px 0">Get higher limits, saved lookups, and a Shopify integration.</p>
-      <ul style="margin:0 0 12px 18px; color:var(--muted)">
-        <li>Instant HS code + duty rate</li>
-        <li>Clear rationale for the match</li>
-        <li>Simple Shopify integration</li>
-      </ul>
-      <small class="muted">API: <span id="apiEcho"></span></small>
+      <h3 style="margin:0 0 8px 0">History</h3>
+      <ul id="history" class="history-list"></ul>
+      <div class="tools">
+        <button id="exportAllBtn" class="secondary">Export All CSV</button>
+        <button id="clearHistoryBtn" class="secondary">Clear History</button>
+      </div>
     </aside>
   </main>
 
-  <footer>© TariffSolver</footer>
+  <footer class="wrap tiny">© TariffSolver</footer>
 
-  <!-- Load the widget logic -->
   <script src="./widget.js"></script>
 </body>
 </html>
