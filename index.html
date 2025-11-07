@@ -1,55 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TariffSolver Lite — Demo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TariffSolver – Classification at the Speed of Trade</title>
+  <meta name="description" content="AI-powered tariff classification and duty calculation for global merchants.">
+  <link rel="icon" href="/favicon.ico">
   <style>
-    :root { --bg:#f7f9fb; --fg:#1f2937; --muted:#6b7280; --card:#ffffff; --brand:#111827; --ok:#065f46; --err:#7f1d1d; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; color:var(--fg); background:var(--bg); }
-    .wrap { max-width: 880px; margin: 40px auto; padding: 0 16px; }
-    header { margin-bottom: 20px; }
-    h1 { font-size: 24px; margin: 0 0 6px; }
-    p { color: var(--muted); margin: 0 0 14px; }
-    .tslite-card { background: var(--card); border-radius: 12px; box-shadow: 0 6px 16px rgba(0,0,0,.06); padding: 18px; }
-    .tslite-title { margin: 0 0 12px; font-size: 18px; }
-    .tslite-form label { display:block; font-weight:600; margin: 8px 0 6px; }
-    textarea { width:100%; min-height: 90px; padding:12px; border:1px solid #e5e7eb; border-radius: 8px; font: inherit; }
-    input { width:100%; padding:10px; border:1px solid #e5e7eb; border-radius: 8px; font: inherit; }
-    .tslite-row { display:flex; gap:12px; margin-top:8px; }
-    .tslite-col { flex:1; }
-    button { margin-top:12px; padding:10px 16px; border:0; border-radius:10px; background:var(--brand); color:white; font-weight:600; cursor:pointer; }
-    button:disabled { opacity:.6; cursor:not-allowed; }
-    .tslite-status { margin-top:10px; font-size:14px; }
-    .tslite-status.loading { color: #374151; }
-    .tslite-status.success { color: var(--ok); }
-    .tslite-status.error { color: var(--err); }
-    .tslite-results { margin-top:14px; }
-    .tslite-table-wrap { overflow:auto; }
-    .tslite-table { border-collapse:collapse; width:100%; background:#fff; }
-    .tslite-table th, .tslite-table td { text-align:left; border-bottom:1px solid #f0f2f5; padding:10px; }
-    .tslite-table th { width: 180px; color:#374151; font-weight:600; }
-    .tslite-rationale { margin-top:12px; background:#fafafa; border:1px solid #eee; padding:12px; border-radius:8px; }
-    .tslite-rationale h4 { margin:0 0 6px; font-size:16px; }
-    .tslite-warn { margin-top:12px; color:#7a3e11; background:#fff7ed; border:1px solid #ffedd5; padding:10px; border-radius:8px; }
-    .tslite-meta { margin-top:8px; color:#6b7280; font-size:12px; }
-    footer { margin: 20px 0; color: var(--muted); font-size: 12px; text-align:center; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #0b0f19;
+      color: #fff;
+      text-align: center;
+    }
+    header { padding: 80px 20px; }
+    h1 { font-size: 3em; margin-bottom: 0.3em; }
+    p { font-size: 1.2em; color: #ccc; }
+    a.demo-btn {
+      display: inline-block;
+      margin-top: 30px;
+      padding: 15px 40px;
+      background: #0af;
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    a.demo-btn:hover { background: #09c; }
+    footer { margin-top: 80px; font-size: 0.9em; color: #888; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>TariffSolver Lite — Demo</h1>
-      <p>Paste a product description and get an instant HTS estimate with duty/VAT context.</p>
-    </header>
-
-    <div id="tslite-root"></div>
-
-    <footer>Demo only. Always verify with a licensed customs broker before filing.</footer>
-  </div>
-
-  <!-- Point the widget to your API -->
-  <script data-api="https://tslite-api.onrender.com/classify" src="/widget.js"></script>
+  <header>
+    <h1>TariffSolver</h1>
+    <p>Classification at the Speed of Trade</p>
+    <a href="https://demo.tariffsolver.com" class="demo-btn">Try Live Demo →</a>
+  </header>
+  <footer>
+    <p>© 2025 TariffSolver Inc. All rights reserved.</p>
+  </footer>
 </body>
 </html>

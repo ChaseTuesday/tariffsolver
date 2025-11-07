@@ -1,61 +1,36 @@
+# TariffSolver 🌐
+**Classification at the Speed of Trade**
 
-# TariffSolver Lite
+TariffSolver is an AI-powered customs classification platform helping Shopify merchants and importers eliminate surprise duties and optimize cross-border pricing.
 
-**TariffSolver Lite** is a lightweight, embeddable widget that helps Shopify merchants and e-commerce platforms classify product descriptions and estimate import tariffs instantly using AI.
-
-🌐 **Live Demo:** [demo.tariffsolver.com](https://demo.tariffsolver.com)
-
----
-
-## 🚀 Features
-
-- 🔍 Instant HS code classification from product descriptions
-- 💵 Estimated duty, VAT, and landed cost (TLC)
-- 📩 Email capture for lead generation
-- 🔗 Easy embed via iframe or HTML snippet
-- ⚙️ Optional Stripe integration for monthly plans
+👉 **Live Site:** [https://tariffsolver.com](https://tariffsolver.com)
+👉 **Try the Demo:** [https://demo.tariffsolver.com](https://demo.tariffsolver.com)
 
 ---
 
-## 🧱 Project Structure
----
+## 🚀 Overview
+TariffSolver automates tariff classification, VAT/duty lookup, and trade logic so merchants can ship internationally with confidence.
+Built with **Next.js**, deployed via **Vercel**, and powered by an intelligent rules engine designed for global trade.
 
-├── index.html           # Main landing page
-├── widget/              # Embeddable widget code
-├── widget.js            # JavaScript logic for classification
-├── style.css            # Stylesheet
-├── favicon.ico          # Site icon
-├── lite-demo/           # Demo variation of the widget
-├── vercel.json          # Vercel deployment config
-
-
-
-
-## 📦 Deployment
-
-This project is automatically deployed via [Vercel](https://vercel.com), using GitHub integration.
-
-Deployments:
-- `tariffsolver-lite.vercel.app`
-- `demo.tariffsolver.com`
-- `shopify.tariffsolver.com`
+### Key Features
+- 🔍 Instant HS/HTS code classification
+- 💰 Automated duty & VAT estimation
+- ⚙️ Trade logic engine with AI reasoning
+- 📈 Analytics dashboard for import/export cost trends
+- 🧩 Shopify & API integrations (coming soon)
 
 ---
 
-## 📥 Embed the Widget
+## 🛠️ Tech Stack
+| Layer | Tech |
+|-------|------|
+| Frontend | Next.js (React 18) |
+| Styling | CSS / TailwindCSS |
+| Hosting | Vercel |
+| API | FastAPI / Python backend |
+| Data | Snowflake / DataStax (planned) |
 
-To embed on a partner site:
+---
 
-```html
-<iframe src="https://demo.tariffsolver.com/widget/index.html" width="100%" height="600" style="border:none;"></iframe>
-
-📬 Contact
-
-For integration or partnership inquiries, email founders@tariffsolver.com.
-
-⸻
-
-🛠️ Coming Soon
-	•	Shopify App integration
-	•	Admin dashboard
-	•	Usage analytics
+## 📜 License
+© 2025 TariffSolver Inc. All rights reserved.
