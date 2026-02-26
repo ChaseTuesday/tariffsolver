@@ -1,5 +1,14 @@
 {
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "http://localhost:8000/api/$1" }
+  "builds": [
+    {
+      "src": "api/classify.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "api/classify.py"
+    }
   ]
 }
