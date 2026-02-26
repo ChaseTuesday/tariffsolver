@@ -1,39 +1,40 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import anthropic
-import os
+from http.server import BaseHTTPRequestHandler
 import json
+import urllib.request
+import os
 
-app = FastAPI()
+class handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        # Handle CORS
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
 
-# Enable CORS for your frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://tariffsolver.com", "http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-class ClassificationRequest(BaseModel):
-    product_description: str
-
-@app.post("/api/classify")
-async def classify_product(request: ClassificationRequest):
-    try:
-        client = anthropic.Anthropic(
-            api_key=os.environ.get("ANTHROPIC_API_KEY")
-        )
+        # Read request body
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
+        request_data = json.loads(post_data.decode('utf-8'))
         
-        message = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=1000,
-            messages=[{
-                "role": "user",
-                "content": f"""You are an expert in tariff classification and HS (Harmonized System) codes. Classify the following product and provide the most likely HS code.
+        product_desc = request_data.get('product_description', '')
+        
+        if not product_desc:
+            self.wfile.write(json.dumps({'error': 'No product description provided'}).encode())
+            return
 
-Product Description: {request.product_description}
+        try:
+            # Call Anthropic API
+            api_key = os.environ.get('ANTHROPIC_API_KEY')
+            
+            if not api_key:
+                self.wfile.write(json.dumps({'error': 'API key not configured'}).encode())
+                return
+            
+            prompt = f"""You are an expert in tariff classification and HS (Harmonized System) codes. Classify the following product and provide the most likely HS code.
+
+Product Description: {product_desc}
 
 Respond ONLY with a valid JSON object (no markdown, no backticks) in this exact format:
 {{
@@ -44,15 +45,43 @@ Respond ONLY with a valid JSON object (no markdown, no backticks) in this exact 
   "chapter": "Chapter number and name",
   "considerations": ["Key factor 1", "Key factor 2", "Key factor 3"]
 }}"""
-            }]
-        )
-        
-        response_text = message.content[0].text
-        # Clean and parse response
-        clean_text = response_text.replace('```json', '').replace('```', '').strip()
-        result = json.loads(clean_text)
-        
-        return result
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+            data = {
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 1000,
+                "messages": [{
+                    "role": "user",
+                    "content": prompt
+                }]
+            }
+            
+            req = urllib.request.Request(
+                'https://api.anthropic.com/v1/messages',
+                data=json.dumps(data).encode('utf-8'),
+                headers={
+                    'Content-Type': 'application/json',
+                    'x-api-key': api_key,
+                    'anthropic-version': '2023-06-01'
+                }
+            )
+            
+            with urllib.request.urlopen(req) as response:
+                result = json.loads(response.read().decode('utf-8'))
+                text = result['content'][0]['text']
+                # Clean response
+                clean_text = text.replace('```json', '').replace('```', '').strip()
+                classification = json.loads(clean_text)
+                
+                self.wfile.write(json.dumps(classification).encode())
+                
+        except Exception as e:
+            error_response = {'error': str(e)}
+            self.wfile.write(json.dumps(error_response).encode())
+    
+    def do_OPTIONS(self):
+        # Handle preflight CORS
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
