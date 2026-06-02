@@ -1,15 +1,8 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/classify.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/classify",
-      "dest": "api/classify.py"
+      "source": "/api/classify",
+      "destination": "/api/classify.py"
     }
   ]
 }
