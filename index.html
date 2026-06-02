@@ -212,16 +212,12 @@
             btn.innerHTML = '<span class="spinner"></span> Classifying...';
 
             try {
-                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                const response = await fetch('api/classify',  {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        model: 'claude-sonnet-4-20250514',
-                        max_tokens: 1000,
-                        messages: [{
-                            role: 'user',
-                            content: 'You are an expert in tariff classification and HS (Harmonized System) codes. Classify the following product and provide the most likely HS code.\n\nProduct Description: ' + productDesc + '\n\nRespond ONLY with a valid JSON object (no markdown, no backticks) in this exact format:\n{\n  "hs_code": "1234.56.78",\n  "description": "Brief description of what this HS code covers",\n  "confidence": "high/medium/low",\n  "reasoning": "Brief explanation of why this classification applies",\n  "chapter": "Chapter number and name",\n  "considerations": ["Key factor 1", "Key factor 2", "Key factor 3"]\n}'
-                        }]
+                        product_description: description
+                        
                     })
                 });
 
