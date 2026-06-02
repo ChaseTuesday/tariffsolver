@@ -228,7 +228,8 @@
 
                 displayResults(result);
             } catch (err) {
-                errorDiv.textContent = 'Failed to classify product. Please try again.';
+                consol.error(err);
+                errorDiv.textContent = err.message || JSON.stringify(err);
                 errorDiv.style.display = 'block';
             } finally {
                 btn.disabled = false;
