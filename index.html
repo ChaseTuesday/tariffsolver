@@ -221,12 +221,8 @@
                     })
                 });
 
-                const data = await response.json();
-                const text = data.content[0].text;
-                const cleanText = text.replace(/```json|```/g, '').trim();
-                const result = JSON.parse(cleanText);
-
-                displayResults(result);
+               const result = await response.json();
+               displayResults(result); 
             } catch (err) {
                 consol.error(err);
                 errorDiv.textContent = 'NEW ERROR TEST';
