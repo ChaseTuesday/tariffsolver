@@ -236,15 +236,15 @@
         function displayResults(result) {
             const resultsDiv = document.getElementById('results');
             
-            const confidenceClass = 'confidence-' + result.confidence;
+            const confidenceClass = 'confidence-medium;
             
-            const considerationsHTML = result.considerations
+            const considerationsHTML = (result.warnings || [])
                 .map(item => '<li>' + item + '</li>')
                 .join('');
 
             resultsDiv.innerHTML = `
                 <div class="confidence ${confidenceClass}">
-                    ${result.confidence.toUpperCase()} CONFIDENCE
+                    CLASSIFICATION RESULT
                 </div>
 
                 <div class="hs-code">
