@@ -1,6 +1,16 @@
 {
   "rewrites": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "demo.tariffsolver.com"
+        }
+      ],
+      "destination": "/demo.html"
+    },
+    {
       "source": "/api/classify",
       "destination": "/api/classify.py"
     }
