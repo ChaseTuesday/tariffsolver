@@ -1,7 +1,10 @@
 // widget.js — TSLite Prod v1
 (function () {
   const SCRIPT = document.currentScript;
-  const API_URL = (SCRIPT && SCRIPT.dataset.api) || "https://tslite-api.onrender.com/classify";
+  const API_URL = (SCRIPT && SCRIPT.dataset.api)
+    || ((window.location.hostname.includes('vercel.app') || window.location.hostname.includes('tariffsolver.com'))
+      ? '/api/classify'
+      : 'https://tslite-api.onrender.com/classify');
 
   const $ = (s, r = document) => r.querySelector(s);
   const root = $("#tslite-root");

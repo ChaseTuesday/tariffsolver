@@ -57,18 +57,20 @@
 
       <div class="actions">
         <button id="classifyBtn" type="button">🔍 Classify Product</button>
-        <a href="/" style="text-decoration:none; color:inherit; display:flex; align-items:center; justify-content:center; padding:0 14px; border-radius:10px; background:#1f2937; border:1px solid #334155; font-weight:700;">Back to landing page</a>
+        <a href="https://tariffsolver.com/" style="text-decoration:none; color:inherit; display:flex; align-items:center; justify-content:center; padding:0 14px; border-radius:10px; background:#1f2937; border:1px solid #334155; font-weight:700;">Back to landing page</a>
       </div>
 
       <div id="error" class="error" role="alert"></div>
       <div id="results" class="results"></div>
     </section>
 
-    <p class="footer-note">This page calls the live backend at https://tslite-api.onrender.com/classify using the expected product_description field.</p>
+    <p class="footer-note">This page calls the Vercel API route /api/classify on the live site, with a fallback to the external backend only for local development.</p>
   </main>
 
   <script>
-    const API_URL = 'https://tslite-api.onrender.com/classify';
+    const API_URL = (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('tariffsolver.com'))
+      ? '/api/classify'
+      : 'https://tslite-api.onrender.com/classify';
 
     function formatApiError(payload) {
       if (!payload) return 'Unknown API error.';
