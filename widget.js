@@ -2,9 +2,8 @@
 (function () {
   const SCRIPT = document.currentScript;
   const API_URL = (SCRIPT && SCRIPT.dataset.api)
-    || ((window.location.hostname.includes('vercel.app') || window.location.hostname.includes('tariffsolver.com'))
-      ? '/api/classify'
-      : 'https://tslite-api.onrender.com/classify');
+    || 'https://tslite-api.onrender.com/classify';
+  const REQUEST_TIMEOUT_MS = 90000;
 
   const $ = (s, r = document) => r.querySelector(s);
   const root = $("#tslite-root");
@@ -50,6 +49,28 @@
     statusEl.className = `tslite-status ${type}`;
   }
 
+  function escapeHtml(text) {
+    return String(text ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  async function fetchWithTimeout(url, options, timeoutMs = REQUEST_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  function isValidClassification(payload) {
+    return payload && (payload.hts_code || payload.hs_code) && payload.ok !== false;
+  }
+
   function renderResults(payload) {
     const rows = [
       ["Product", payload.product],
@@ -58,7 +79,7 @@
       ["Estimated VAT", payload.vat_rate],
       ["Trade/FTA", payload.tlc],
     ];
-    const warnings = (payload.warnings || []).map(w => `<li>${w}</li>`).join("");
+    const warnings = (payload.warnings || []).map(w => `<li>${escapeHtml(w)}</li>`).join("");
 
     resultsEl.innerHTML = `
       <div class="tslite-table-wrap">
@@ -66,7 +87,7 @@
           <tbody>
             ${rows.map(([k, v]) => `
               <tr>
-                <th>${k}</th><td>${v || "-"}</td>
+                <th>${escapeHtml(k)}</th><td>${escapeHtml(v || "-")}</td>
               </tr>
             `).join("")}
           </tbody>
@@ -74,10 +95,10 @@
       </div>
       <div class="tslite-rationale">
         <h4>Why this code?</h4>
-        <p>${payload.rationale || "-"}</p>
+        <p>${escapeHtml(payload.rationale || "-")}</p>
       </div>
       ${warnings ? `<div class="tslite-warn"><ul>${warnings}</ul></div>` : ""}
-      <div class="tslite-meta">Latency: ${payload.latency_ms || 0} ms</div>
+      <div class="tslite-meta">Latency: ${escapeHtml(payload.latency_ms || 0)} ms</div>
     `;
   }
 
@@ -97,27 +118,38 @@
     setStatus("Classifying…", "loading");
 
     try {
-      const res = await fetch(API_URL, {
+      const res = await fetchWithTimeout(API_URL, {
         method: "POST",
         headers: {"Content-Type":"application/json"},
         body: JSON.stringify({ product_description, country_of_origin, declared_value })
       });
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`API ${res.status}: ${text}`);
+      const rawText = await res.text();
+      let data = null;
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch (jsonError) {
+        data = null;
       }
 
-      const data = await res.json();
-      if (!data || !data.ok) {
-        throw new Error("Unexpected API response.");
+      if (!res.ok) {
+        const detail = data && (data.error || data.detail) ? JSON.stringify(data) : rawText;
+        throw new Error(`API ${res.status}: ${detail || "Request failed"}`);
+      }
+
+      if (!isValidClassification(data)) {
+        throw new Error(data && data.error ? data.error : "Unexpected API response.");
       }
 
       renderResults(data);
       setStatus("Done.", "success");
     } catch (err) {
       console.error(err);
-      setStatus("We couldn’t classify that. Please try again in a moment.", "error");
+      if (err && err.name === "AbortError") {
+        setStatus("Request timed out. The classifier may be waking up — please try again.", "error");
+      } else {
+        setStatus(err && err.message ? err.message : "We couldn’t classify that. Please try again in a moment.", "error");
+      }
     } finally {
       btn.disabled = false;
     }

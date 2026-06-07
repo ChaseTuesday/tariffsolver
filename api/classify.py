@@ -1,6 +1,14 @@
 from http.server import BaseHTTPRequestHandler
 import json
+import os
+import urllib.error
 import urllib.request
+
+UPSTREAM_URL = os.environ.get(
+    'CLASSIFY_API_URL',
+    'https://tslite-api.onrender.com/classify',
+)
+UPSTREAM_TIMEOUT = int(os.environ.get('CLASSIFY_TIMEOUT', '90'))
 
 
 class handler(BaseHTTPRequestHandler):
@@ -15,6 +23,13 @@ class handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _read_upstream_body(self, response):
+        payload = response.read().decode('utf-8')
+        try:
+            return json.loads(payload)
+        except json.JSONDecodeError:
+            return {'error': payload}
+
     def do_POST(self):
         try:
             content_length = int(self.headers.get('Content-Length', '0'))
@@ -27,25 +42,30 @@ class handler(BaseHTTPRequestHandler):
                 return
 
             upstream = urllib.request.Request(
-                'https://tslite-api.onrender.com/classify',
+                UPSTREAM_URL,
                 data=json.dumps(request_data).encode('utf-8'),
                 headers={'Content-Type': 'application/json'},
                 method='POST',
             )
 
-            with urllib.request.urlopen(upstream) as response:
-                payload = response.read().decode('utf-8')
-                try:
-                    data = json.loads(payload)
-                except json.JSONDecodeError:
-                    data = {'error': payload}
-
-            if response.status >= 400:
-                self._send_json(int(response.status), data if isinstance(data, dict) else {'error': data})
-                return
-
-            self._send_json(200, data)
-
+            try:
+                with urllib.request.urlopen(upstream, timeout=UPSTREAM_TIMEOUT) as response:
+                    data = self._read_upstream_body(response)
+                    if response.status >= 400:
+                        self._send_json(
+                            int(response.status),
+                            data if isinstance(data, dict) else {'error': data},
+                        )
+                        return
+                    self._send_json(200, data)
+            except urllib.error.HTTPError as exc:
+                data = self._read_upstream_body(exc)
+                self._send_json(
+                    exc.code,
+                    data if isinstance(data, dict) else {'error': data},
+                )
+            except urllib.error.URLError as exc:
+                self._send_json(502, {'error': f'Classifier backend unreachable: {exc.reason}'})
         except Exception as exc:
             self._send_json(502, {'error': f'Classifier proxy failed: {exc}'})
 

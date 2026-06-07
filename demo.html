@@ -64,13 +64,32 @@
       <div id="results" class="results"></div>
     </section>
 
-    <p class="footer-note">This page calls the Vercel API route /api/classify on the live site, with a fallback to the external backend only for local development.</p>
+    <p class="footer-note">This page calls the live backend at https://tslite-api.onrender.com/classify.</p>
   </main>
 
   <script>
-    const API_URL = (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('tariffsolver.com'))
-      ? '/api/classify'
-      : 'https://tslite-api.onrender.com/classify';
+    const API_URL = 'https://tslite-api.onrender.com/classify';
+    const REQUEST_TIMEOUT_MS = 90000;
+    const MIN_DESCRIPTION_LENGTH = 3;
+    const MAX_DESCRIPTION_LENGTH = 2000;
+
+    function escapeHtml(text) {
+      return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    async function fetchWithTimeout(url, options, timeoutMs = REQUEST_TIMEOUT_MS) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await fetch(url, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
 
     function formatApiError(payload) {
       if (!payload) return 'Unknown API error.';
@@ -99,21 +118,23 @@
         : Array.isArray(result.warnings)
           ? result.warnings
           : [];
-      const considerationsHtml = considerations.map((item) => `<li>${item}</li>`).join('');
+      const considerationsHtml = considerations
+        .map((item) => `<li>${escapeHtml(item)}</li>`)
+        .join('');
       const confidence = String(result.confidence || result.tlc || 'medium').toLowerCase();
       const confidenceClass = getConfidenceClass(confidence);
 
       document.getElementById('results').innerHTML = `
         <div class="badge ${confidenceClass}">Classification result</div>
         <article class="hs-card">
-          <div class="hs-number">${hsCode}</div>
-          <p><strong>${chapter}</strong></p>
-          <p class="muted">${description}</p>
-          <p class="muted">Estimated duty: ${result.duty_rate || '—'} · Estimated VAT: ${result.vat_rate || '—'}</p>
+          <div class="hs-number">${escapeHtml(hsCode)}</div>
+          <p><strong>${escapeHtml(chapter)}</strong></p>
+          <p class="muted">${escapeHtml(description)}</p>
+          <p class="muted">Estimated duty: ${escapeHtml(result.duty_rate || '—')} · Estimated VAT: ${escapeHtml(result.vat_rate || '—')}</p>
         </article>
         <section class="panel">
           <h3 style="margin-top:0;">Reasoning</h3>
-          <p class="muted">${reasoning}</p>
+          <p class="muted">${escapeHtml(reasoning)}</p>
         </section>
         <section class="panel">
           <h3 style="margin-top:0;">Key considerations</h3>
@@ -136,16 +157,34 @@
         return;
       }
 
+      if (productDesc.length < MIN_DESCRIPTION_LENGTH) {
+        errorDiv.textContent = `Product description must be at least ${MIN_DESCRIPTION_LENGTH} characters.`;
+        errorDiv.style.display = 'block';
+        resultsDiv.style.display = 'none';
+        return;
+      }
+
+      if (productDesc.length > MAX_DESCRIPTION_LENGTH) {
+        errorDiv.textContent = `Product description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer.`;
+        errorDiv.style.display = 'block';
+        resultsDiv.style.display = 'none';
+        return;
+      }
+
       errorDiv.style.display = 'none';
       resultsDiv.style.display = 'none';
       btn.disabled = true;
       btn.textContent = 'Classifying...';
 
       try {
-        const response = await fetch(API_URL, {
+        const response = await fetchWithTimeout(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ product_description: productDesc })
+          body: JSON.stringify({
+            product_description: productDesc,
+            country_of_origin: null,
+            declared_value: null
+          })
         });
 
         const rawText = await response.text();
@@ -160,7 +199,7 @@
           throw new Error(`HTTP ${response.status}: ${formatApiError(payload || rawText)}`);
         }
 
-        if (payload && payload.error) {
+        if (payload && (payload.error || payload.ok === false)) {
           throw new Error(formatApiError(payload));
         }
 
@@ -170,7 +209,11 @@
 
         renderResults(payload);
       } catch (err) {
-        errorDiv.textContent = err && err.message ? err.message : 'Unable to classify product right now.';
+        if (err && err.name === 'AbortError') {
+          errorDiv.textContent = 'The request timed out. The classifier may be waking up — please try again in a moment.';
+        } else {
+          errorDiv.textContent = err && err.message ? err.message : 'Unable to classify product right now.';
+        }
         errorDiv.style.display = 'block';
       } finally {
         btn.disabled = false;

@@ -9,10 +9,6 @@
         }
       ],
       "destination": "/demo.html"
-    },
-    {
-      "source": "/api/classify",
-      "destination": "/api/classify.py"
     }
   ]
 }
