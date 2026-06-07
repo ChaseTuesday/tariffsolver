@@ -211,6 +211,8 @@
       } catch (err) {
         if (err && err.name === 'AbortError') {
           errorDiv.textContent = 'The request timed out. The classifier may be waking up — please try again in a moment.';
+        } else if (err && err.message === 'Failed to fetch') {
+          errorDiv.textContent = 'Network error: could not reach the classifier API. Check your connection and try again.';
         } else {
           errorDiv.textContent = err && err.message ? err.message : 'Unable to classify product right now.';
         }
