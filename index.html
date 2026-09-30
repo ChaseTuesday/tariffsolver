@@ -30,19 +30,19 @@
   <main class="page">
     <section class="hero">
       <div class="tag">Public landing page</div>
-      <h1>TariffSolver helps importers classify products faster.</h1>
-      <p>Use the live classifier for HS-code guidance, or join the beta waitlist for early access to the full product and duty workflow.</p>
+      <h1>Get a clearer start on product classification.</h1>
+      <p>Try the public demo to see which product details a human reviewer needs. It does not issue a verified HTS code, duty rate, or landed cost. Contact us for beta access to the full workflow.</p>
       <div class="cta-row">
         <a class="cta" href="https://demo.tariffsolver.com/demo.html">Try Live Demo</a>
         <a class="cta secondary" href="mailto:hello@tariffsolver.com?subject=TariffSolver%20Beta%20Access">Join Beta Access</a>
       </div>
-      <p class="note">This opens the live classifier page directly on the demo domain.</p>
+      <p class="note">The demo checks basic product details and flags them for human review; it does not save or submit a case.</p>
     </section>
 
     <section class="grid">
       <article class="card">
         <h2>What this page does</h2>
-        <p>This public page is the normal landing page for tariffsolver.com. It links to the live demo and to a clear beta-access contact path.</p>
+        <p>This public page is the normal landing page for tariffsolver.com. It links to the review-status demo and to a beta-access contact path.</p>
         <div class="mini-card">
           <strong>Demo link:</strong> https://demo.tariffsolver.com/demo.html<br />
           <strong>Beta contact:</strong> hello@tariffsolver.com
@@ -52,9 +52,9 @@
       <article class="card">
         <h2>Why the demo path matters</h2>
         <ul>
-          <li>demo.tariffsolver.com should open the classifier page, not a redirect loop.</li>
+          <li>demo.tariffsolver.com should open the review-status demo, not a redirect loop.</li>
           <li>tariffsolver.com should stay on the public landing page.</li>
-          <li>The classifier page calls the live backend at https://tslite-api.onrender.com/classify.</li>
+          <li>The demo checks review status through the live API; no classification or rate is verified.</li>
         </ul>
       </article>
     </section>
