@@ -21,9 +21,10 @@
     .hero p { color: #dbeafe; line-height: 1.5; }
     .panel { padding: 22px; margin-bottom: 18px; }
     label { display: block; font-weight: 700; margin-bottom: 8px; color: #eff6ff; }
+    input { width: 100%; padding: 12px; margin-bottom: 12px; border-radius: 10px; border: 1px solid #334155; background: #111827; color: #eff6ff; font: inherit; }
     textarea { width: 100%; min-height: 110px; padding: 12px; border-radius: 10px; border: 1px solid #334155; background: #111827; color: #eff6ff; font: inherit; }
     textarea:focus { outline: 2px solid #38bdf8; border-color: #38bdf8; }
-    .hint { color: #bfdbfe; font-size: 0.95rem; margin-top: 6px; }
+    .hint { color: #bfdbfe; font-size: 0.95rem; margin: 6px 0 18px; }
     .actions { display: flex; gap: 10px; margin-top: 14px; }
     button {
       border: none; border-radius: 10px; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%); color: #082f49; font-weight: 800; font-size: 1rem; padding: 12px 16px; cursor: pointer;
@@ -47,16 +48,20 @@
   <main class="page">
     <section class="hero">
       <h1>TariffSolver Demo</h1>
-      <p>Paste a product description to classify the likely HS code and review the AI reasoning behind the result.</p>
+      <p>Enter product details to see what a human reviewer would need. This public demo does not submit a case or issue a verified HTS code, duty rate, or landed cost.</p>
     </section>
 
     <section class="panel">
       <label for="productDesc">Product description</label>
       <textarea id="productDesc" placeholder="E.g. Women’s cotton t-shirt with polyester print, short sleeves, crew neck..."></textarea>
-      <div class="hint">Be specific about materials, use, construction, and features.</div>
+      <div class="hint">Describe use and features. Do not include private supplier details in this public demo.</div>
+      <label for="material">Material</label><input id="material" type="text" maxlength="300" placeholder="e.g. 100% cotton" />
+      <label for="construction">Construction</label><input id="construction" type="text" maxlength="300" placeholder="e.g. knitted, short sleeves" />
+      <label for="origin">Country of origin</label><input id="origin" type="text" maxlength="100" placeholder="e.g. Vietnam" />
+      <label for="value">Declared value (USD)</label><input id="value" type="number" min="0" step="0.01" placeholder="Optional; no duty is calculated yet" />
 
       <div class="actions">
-        <button id="classifyBtn" type="button">🔍 Classify Product</button>
+        <button id="classifyBtn" type="button">Check review status</button>
         <a href="https://tariffsolver.com/" style="text-decoration:none; color:inherit; display:flex; align-items:center; justify-content:center; padding:0 14px; border-radius:10px; background:#1f2937; border:1px solid #334155; font-weight:700;">Back to landing page</a>
       </div>
 
@@ -64,7 +69,7 @@
       <div id="results" class="results"></div>
     </section>
 
-    <p class="footer-note">This page calls the live backend at https://tslite-api.onrender.com/classify.</p>
+    <p class="footer-note">This demo sends product details to the review-status API; it does not create or save a pilot case.</p>
   </main>
 
   <script>
@@ -101,51 +106,25 @@
       return typeof payload === 'string' ? payload : JSON.stringify(payload);
     }
 
-    function getConfidenceClass(confidence) {
-      const value = String(confidence || '').toLowerCase();
-      if (value === 'high') return 'badge-high';
-      if (value === 'low') return 'badge-low';
-      return 'badge-medium';
-    }
-
     function renderResults(result) {
-      const hsCode = result.hts_code || result.hs_code || '—';
-      const description = result.product || result.description || 'No description returned.';
-      const chapter = result.chapter || 'HS / HTS classification';
-      const reasoning = result.rationale || result.reasoning || 'No reasoning provided.';
-      const considerations = Array.isArray(result.considerations)
-        ? result.considerations
-        : Array.isArray(result.warnings)
-          ? result.warnings
-          : [];
-      const considerationsHtml = considerations
-        .map((item) => `<li>${escapeHtml(item)}</li>`)
-        .join('');
-      const confidence = String(result.confidence || result.tlc || 'medium').toLowerCase();
-      const confidenceClass = getConfidenceClass(confidence);
-
+      const warnings = Array.isArray(result.warnings) ? result.warnings : [];
       document.getElementById('results').innerHTML = `
-        <div class="badge ${confidenceClass}">Classification result</div>
-        <article class="hs-card">
-          <div class="hs-number">${escapeHtml(hsCode)}</div>
-          <p><strong>${escapeHtml(chapter)}</strong></p>
-          <p class="muted">${escapeHtml(description)}</p>
-          <p class="muted">Estimated duty: ${escapeHtml(result.duty_rate || '—')} · Estimated VAT: ${escapeHtml(result.vat_rate || '—')}</p>
-        </article>
-        <section class="panel">
-          <h3 style="margin-top:0;">Reasoning</h3>
-          <p class="muted">${escapeHtml(reasoning)}</p>
-        </section>
-        <section class="panel">
-          <h3 style="margin-top:0;">Key considerations</h3>
-          <ul>${considerationsHtml || '<li>No considerations returned.</li>'}</ul>
-        </section>
-      `;
+        <div class="badge badge-low">Human review required</div>
+        <article class="hs-card"><div class="hs-number">No verified HTS code</div>
+          <p class="muted">${escapeHtml(result.product || '')}</p>
+          <p class="muted">No duty rate or landed cost calculated.</p></article>
+        <section class="panel"><h3>Next step</h3><p>${escapeHtml(result.rationale || '')}</p>
+          <ul>${warnings.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul></section>`;
       document.getElementById('results').style.display = 'block';
     }
 
     async function classifyProduct() {
       const productDesc = document.getElementById('productDesc').value.trim();
+      const material = document.getElementById('material').value.trim();
+      const construction = document.getElementById('construction').value.trim();
+      const origin = document.getElementById('origin').value.trim();
+      const valueText = document.getElementById('value').value.trim();
+      const value = valueText === '' ? null : Number(valueText);
       const errorDiv = document.getElementById('error');
       const resultsDiv = document.getElementById('results');
       const btn = document.getElementById('classifyBtn');
@@ -171,10 +150,17 @@
         return;
       }
 
+      if (value !== null && (!Number.isFinite(value) || value < 0)) {
+        errorDiv.textContent = 'Declared value must be zero or greater.';
+        errorDiv.style.display = 'block';
+        resultsDiv.style.display = 'none';
+        return;
+      }
+
       errorDiv.style.display = 'none';
       resultsDiv.style.display = 'none';
       btn.disabled = true;
-      btn.textContent = 'Classifying...';
+      btn.textContent = 'Checking...';
 
       try {
         const response = await fetchWithTimeout(API_URL, {
@@ -182,8 +168,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             product_description: productDesc,
-            country_of_origin: null,
-            declared_value: null
+            material: material || null,
+            construction: construction || null,
+            country_of_origin: origin || null,
+            declared_value: value
           })
         });
 
@@ -203,8 +191,8 @@
           throw new Error(formatApiError(payload));
         }
 
-        if (!payload || (!payload.hts_code && !payload.hs_code)) {
-          throw new Error('The API returned an empty or invalid classification result.');
+        if (!payload || payload.status !== 'review_required') {
+          throw new Error('The API did not return the expected review-only response. No result can be displayed safely.');
         }
 
         renderResults(payload);
@@ -219,7 +207,7 @@
         errorDiv.style.display = 'block';
       } finally {
         btn.disabled = false;
-        btn.textContent = '🔍 Classify Product';
+        btn.textContent = 'Check review status';
       }
     }
 
