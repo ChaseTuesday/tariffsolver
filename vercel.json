@@ -1,14 +1,10 @@
 {
   "redirects": [
+    { "source": "/demo.html", "destination": "/", "permanent": false },
     {
       "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "demo.tariffsolver.com"
-        }
-      ],
-      "destination": "/demo.html",
+      "has": [ { "type": "host", "value": "demo.tariffsolver.com" } ],
+      "destination": "https://tariffsolver.com/",
       "permanent": false
     }
   ]
